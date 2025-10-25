@@ -1,0 +1,8 @@
+package mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories
+
+import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
+import org.springframework.data.jpa.repository.JpaRepository
+
+interface StudentSemesterEnrollmentJpaRepository : JpaRepository<StudentSemesterEnrollment, StudentSemesterEnrollmentId> {
+}

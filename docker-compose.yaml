@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  broker:
+    image: apache/kafka:latest
+    hostname: broker
+    container_name: broker
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+    networks:
+      - student_semester_enrollment_services_net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      # you can add more clusters by incrementing the index (0 → 1 → 2…)
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: broker:29092
+      # leave empty if you’re using KRaft; omit or set to blank
+      KAFKA_CLUSTERS_0_ZOOKEEPER: ""
+    depends_on:
+      - broker
+
+    networks:
+      - student_semester_enrollment_services_net
+
+  postgres:
+    image: postgres:15
+    container_name: student-semester-enrollment-db
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: soa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - student_semester_enrollment_services_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: student-semester-enrollment
+    ports:
+      - "8092:8080"
+    depends_on:
+      - broker
+      - postgres
+      - consul
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/soa
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+    networks:
+      - student_semester_enrollment_services_net
+
+  consul:
+    image: hashicorp/consul
+    container_name: dev-consul
+    ports:
+      - "8500:8500"
+    networks:
+      - student_semester_enrollment_services_net
+
+networks:
+  student_semester_enrollment_services_net:
+    name: student_semester_enrollment_services_net
+    driver: bridge
+
+volumes:
+  postgres_data:
