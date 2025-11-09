@@ -20,11 +20,3 @@ data class StudyProgram(val studyProgram: String) {
         fun toStudyProgram(): StudyProgram = StudyProgram(programName)
     }
 }
-
-enum class StudyProgramType(val studyProgram: String) {
-    SOFTWARE_ENGINEERING("Софтверско инженерство и информациски системи"),
-    INFORMATION_TECHNOLOGIES("Примена на информациски технологии"),
-    COMPUTER_ENGINEERING("Компјутерско инженерство"),
-    COMPUTER_SCIENCE("Компјутерски науки"),
-    CYBER_SECURITY("Интернет, мрежи и безбедност")
-}
