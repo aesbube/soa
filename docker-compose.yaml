@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   broker:
     image: apache/kafka:latest
@@ -33,10 +31,8 @@ services:
     ports:
       - "8081:8080"
     environment:
-      # you can add more clusters by incrementing the index (0 → 1 → 2…)
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: broker:29092
-      # leave empty if you’re using KRaft; omit or set to blank
       KAFKA_CLUSTERS_0_ZOOKEEPER: ""
     depends_on:
       - broker
@@ -61,7 +57,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfile.test
     container_name: student-semester-enrollment
     ports:
       - "8092:8080"

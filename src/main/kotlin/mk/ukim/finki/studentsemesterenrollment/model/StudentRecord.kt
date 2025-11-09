@@ -10,6 +10,7 @@ import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordComma
 import mk.ukim.finki.studentsemesterenrollment.events.StudentRecordCreatedEvent
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.*
 import org.axonframework.commandhandling.CommandHandler
+import org.axonframework.eventsourcing.EventSourcingHandler
 import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle
 import org.axonframework.spring.stereotype.Aggregate
@@ -38,34 +39,57 @@ class StudentRecord {
     private var passedSubjects: MutableList<SubjectAggregateSnapshot> = mutableListOf()
 
     private lateinit var enrollmentYear: StudyYear
-    private lateinit var winterSemesterNumber: Number
-    private lateinit var summerSemesterNumber: Number
+    private var winterSemesterNumber: Int = 0
+    private var summerSemesterNumber: Int = 0
 
     private lateinit var createdAt: LocalDateTime
+
+    constructor()
 
     @CommandHandler
     fun createStudentRecordCommand(
         command: CreateStudentRecordCommand,
         client: AccreditationClient
     ) {
-        val subjects = client.getStudyProgramSubjects(studyProgram)
-        subjectSlots = subjects.mapIndexed { index, code ->
-            SubjectSlot(
-                    id = index.toLong(),
-                    subjectId = code,
-                    electiveSubjectGroup = null,
-                    status = SubjectSlotStatus.NOT_ENROLLED,
-                    student = this,
-                    exam = null
-            )
-        }.toMutableList()
+        val subjects = client.getStudyProgramSubjects(command.studyProgram)
 
-        val event = StudentRecordCreatedEvent(command)
-        this.on(event)
+        val event = StudentRecordCreatedEvent(
+            id = command.id,
+            ects = command.ects,
+            studyProgram = command.studyProgram,
+            subjects = subjects
+        )
+
         AggregateLifecycle.apply(event)
     }
 
+    @EventSourcingHandler
     fun on(event: StudentRecordCreatedEvent) {
+        this.id = event.id
+
+        this.ects = event.ects
+        this.studyProgram = event.studyProgram
+
+        this.gpa = GPA(5.0)
+
+        this.enrollmentYear = event.id.enrollmentYear()
+
+        this.winterSemesterNumber = 0
+        this.summerSemesterNumber = 0
+
         this.createdAt = LocalDateTime.now()
+
+        this.passedSubjects = mutableListOf()
+
+        this.subjectSlots = event.subjects.mapIndexed { index, code ->
+            SubjectSlot(
+                id = index.toLong(),
+                subjectId = code,
+                electiveSubjectGroup = null,
+                status = SubjectSlotStatus.NOT_ENROLLED,
+                student = this,
+                exam = null
+            )
+        }.toMutableList()
     }
 }
