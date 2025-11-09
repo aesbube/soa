@@ -4,11 +4,11 @@ import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrol
 
 data class ValidateEnrollmentConditionsCommand(
     val studentSemesterEnrollmentId: StudentSemesterEnrollmentId,
-    val previousStudentSemesterEnrollmentid: StudentSemesterEnrollmentId,
+    val previousStudentSemesterEnrollmentId: StudentSemesterEnrollmentId,
 
-){
+    ){
     constructor(command: ValidateEnrollmentConditionsCommand) : this (
         command.studentSemesterEnrollmentId,
-        command.previousStudentSemesterEnrollmentid
+        command.previousStudentSemesterEnrollmentId
     )
 }

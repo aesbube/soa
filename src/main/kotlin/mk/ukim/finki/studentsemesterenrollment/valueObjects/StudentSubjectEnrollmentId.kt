@@ -18,5 +18,8 @@ data class StudentSubjectEnrollmentId(
         return value
     }
 
+    fun subjectCode(): SubjectCode {
+        return SubjectCode(value.split("-").last())
+    }
 
 }

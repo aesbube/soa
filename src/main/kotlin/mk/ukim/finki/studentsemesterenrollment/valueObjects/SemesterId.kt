@@ -23,3 +23,10 @@ data class SemesterId(
         return value
     }
 }
+
+val SemesterId.previousSemesterId: SemesterId
+    get() = if (isWinterSemester) {
+        SemesterId("${startYear-1}-${(endYear-1).toString().substring(2,4)}-S")
+    } else {
+        SemesterId(toString().replace("S", "W"))
+    }

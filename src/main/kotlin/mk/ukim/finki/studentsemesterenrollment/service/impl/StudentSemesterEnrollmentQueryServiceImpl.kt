@@ -5,12 +5,14 @@ import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.service.StudentSemesterEnrollmentService
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
+import org.axonframework.commandhandling.gateway.CommandGateway
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
-class StudentSemesterEnrollmentServiceImpl(
-    val repository: StudentSemesterEnrollmentJpaRepository
+class StudentSemesterEnrollmentQueryServiceImpl(
+    private val repository: StudentSemesterEnrollmentJpaRepository,
+    private val commandGateway: CommandGateway,
 ) : StudentSemesterEnrollmentService {
     override fun getAll(): List<StudentSemesterEnrollment> = repository.findAll()
 
