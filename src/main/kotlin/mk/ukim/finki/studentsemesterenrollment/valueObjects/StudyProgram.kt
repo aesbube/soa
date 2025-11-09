@@ -10,6 +10,15 @@ data class StudyProgram(val studyProgram: String) {
             throw IllegalArgumentException("Invalid study program: $studyProgram. It should contain only latin or cyrillic letters, numbers, and single spaces")
         }
     }
+    enum class Type(val programName: String) {
+        SOFTWARE_ENGINEERING("Софтверско инженерство и информациски системи"),
+        INFORMATION_TECHNOLOGIES("Примена на информациски технологии"),
+        COMPUTER_ENGINEERING("Компјутерско инженерство"),
+        COMPUTER_SCIENCE("Компјутерски науки"),
+        CYBER_SECURITY("Интернет, мрежи и безбедност");
+
+        fun toStudyProgram(): StudyProgram = StudyProgram(programName)
+    }
 }
 
 enum class StudyProgramType(val studyProgram: String) {

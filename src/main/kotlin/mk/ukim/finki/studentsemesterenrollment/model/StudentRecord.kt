@@ -7,10 +7,7 @@ import jakarta.persistence.OneToMany
 import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SubjectAggregateSnapshot
 import mk.ukim.finki.studentsemesterenrollment.client.AccreditationClient
 import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordCommand
-import mk.ukim.finki.studentsemesterenrollment.commands.EnrollStudentInFailedSubjectCommand
-import mk.ukim.finki.studentsemesterenrollment.events.EnrollStudentInFailedSubjectEvent
 import mk.ukim.finki.studentsemesterenrollment.events.StudentRecordCreatedEvent
-import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.*
 import org.axonframework.commandhandling.CommandHandler
 import org.axonframework.modelling.command.AggregateIdentifier
@@ -51,7 +48,7 @@ class StudentRecord {
         command: CreateStudentRecordCommand,
         client: AccreditationClient
     ) {
-        val subjects = client.getStudyProgramSubjects(studyProgram).body ?: emptyList()
+        val subjects = client.getStudyProgramSubjects(studyProgram)
         subjectSlots = subjects.mapIndexed { index, code ->
             SubjectSlot(
                     id = index.toLong(),
