@@ -10,6 +10,7 @@ import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.Subjec
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.*
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
 import org.axonframework.commandhandling.CommandHandler
+import org.axonframework.commandhandling.gateway.CommandGateway
 import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle
 import org.axonframework.spring.stereotype.Aggregate
@@ -172,12 +173,6 @@ class StudentSemesterEnrollment {
         if (this.enrolledSubjects.any { it.subjectCode() == command.subjectCode }) {
             throw IllegalStateException("Student is already enrolled in subject ${command.subjectCode}")
         }
-
-        val currentECTS = calculateCurrentECTS(subjectJpaRepository)
-        if (currentECTS + subject.ects.credits > 36) {
-            throw IllegalStateException("Cannot enroll: Would exceed maximum ECTS limit")
-        }
-
         val event = StudentProvisionallyEnrolledOnSubjectEvent(command = command)
 
         this.on(event)
@@ -205,29 +200,41 @@ class StudentSemesterEnrollment {
     @CommandHandler
     fun validateEnrollmentConditions(
         command: ValidateEnrollmentConditionsCommand,
-        studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository
+        studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository,
+        commandGateway: CommandGateway
     ) {
         val previousSemesterEnrollment = studentSemesterEnrollmentJpaRepository.findById(command.previousStudentSemesterEnrollmentId).getOrNull()
 
         // todo: validations...
         val valid = validate()
 
-        if (!valid) {
-            this.enrollmentStatus = EnrollmentStatus.INVALID
-            this.lastUpdatedAt = LocalDateTime.now()
-            return
+        when (valid) {
+            true -> {
+                val event = EnrollmentConditionsValidatedEvent(command)
+                this.on(event, commandGateway)
+                AggregateLifecycle.apply(event)
+            }
+            false -> {
+                val event = EnrollmentConditionsValidationFailedEvent(command)
+                this.on(event)
+                AggregateLifecycle.apply(event)
+            }
         }
-
-        val event = EnrollmentConditionsValidatedEvent(command)
-        this.on(event)
-        AggregateLifecycle.apply(event)
     }
 
     private fun validate(): Boolean {
         return true
     }
-    fun on(event: EnrollmentConditionsValidatedEvent) {
+
+    fun on(event: EnrollmentConditionsValidatedEvent, commandGateway: CommandGateway) {
         this.enrollmentStatus = EnrollmentStatus.SUBJECTS_ADDED
+        this.lastUpdatedAt = LocalDateTime.now()
+
+        commandGateway.send<Any>(ConfirmEnrolledSubjectsCommand(event.studentSemesterEnrollmentId))
+    }
+
+    fun on(event: EnrollmentConditionsValidationFailedEvent) {
+        this.enrollmentStatus = EnrollmentStatus.INVALID
         this.lastUpdatedAt = LocalDateTime.now()
     }
 

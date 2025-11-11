@@ -13,3 +13,11 @@ data class EnrollmentConditionsValidatedEvent
         previousStudentSemesterEnrollmentId = command.previousStudentSemesterEnrollmentId
     )
 }
+
+data class EnrollmentConditionsValidationFailedEvent(
+    val studentSemesterEnrollmentId: StudentSemesterEnrollmentId,
+): AbstractEvent<StudentSemesterEnrollmentId>(studentSemesterEnrollmentId) {
+    constructor(command: ValidateEnrollmentConditionsCommand) : this(
+        studentSemesterEnrollmentId = command.studentSemesterEnrollmentId,
+    )
+}

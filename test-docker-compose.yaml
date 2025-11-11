@@ -57,7 +57,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: dockerfile
+      dockerfile: dockerfile.test
     container_name: student-semester-enrollment
     ports:
       - "8092:8080"
