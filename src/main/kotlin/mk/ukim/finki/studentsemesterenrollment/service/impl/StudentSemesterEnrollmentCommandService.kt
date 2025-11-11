@@ -1,5 +1,6 @@
 package mk.ukim.finki.studentsemesterenrollment.service.impl
 
+import mk.ukim.finki.studentsemesterenrollment.commands.ConfirmRegularEnrollmentCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.EnrollStudentInFailedSubjectCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.ProvisionallyEnrollStudentOnSubjectCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.StartRegularEnrollmentCommand
@@ -80,15 +81,14 @@ class StudentSemesterEnrollmentCommandService(
     }
 
     fun validateEnrollmentConditions(
-        id: String,
+        id: StudentSemesterEnrollmentId,
     ) {
-        val enrollmentId = StudentSemesterEnrollmentId(id)
         commandGateway.send<Void>(ValidateEnrollmentConditionsCommand(
-            studentSemesterEnrollmentId = enrollmentId,
+            studentSemesterEnrollmentId = id,
             previousStudentSemesterEnrollmentId = StudentSemesterEnrollmentId(
-                studentIndex = enrollmentId.studentIndex(),
+                studentIndex = id.studentIndex(),
                 semesterCode = CycleSemesterId(
-                    semesterId = enrollmentId.semesterCode().previousSemesterId,
+                    semesterId = id.semesterCode().previousSemesterId,
                     cycle = StudyCycle.UNDERGRADUATE
                 )
             )
@@ -101,5 +101,9 @@ class StudentSemesterEnrollmentCommandService(
         commandGateway.send<Void>(UpdatePaymentStatusCommand(
             semesterEnrollmentId = StudentSemesterEnrollmentId(id)
         ))
+    }
+
+    fun confirmEnrollment(id: StudentSemesterEnrollmentId) {
+        commandGateway.send<Any>(ConfirmRegularEnrollmentCommand(id))
     }
 }
