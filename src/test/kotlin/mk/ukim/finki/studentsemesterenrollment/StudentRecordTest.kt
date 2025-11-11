@@ -1,6 +1,6 @@
 package mk.ukim.finki.studentsemesterenrollment
 
-import mk.ukim.finki.studentsemesterenrollment.client.fallbacks.AccreditationClientFallback
+import mk.ukim.finki.studentsemesterenrollment.client.AccreditationClient
 import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordCommand
 import mk.ukim.finki.studentsemesterenrollment.events.StudentRecordCreatedEvent
 import mk.ukim.finki.studentsemesterenrollment.model.StudentRecord
@@ -14,12 +14,12 @@ import org.mockito.kotlin.whenever
 class StudentRecordTest {
 
     private lateinit var fixture: AggregateTestFixture<StudentRecord>
-    private lateinit var mockAccreditationClient: AccreditationClientFallback
+    private lateinit var mockAccreditationClient: AccreditationClient
 
     @BeforeEach
     fun setup() {
         fixture = AggregateTestFixture(StudentRecord::class.java)
-        mockAccreditationClient = mock(AccreditationClientFallback::class.java)
+        mockAccreditationClient = mock(AccreditationClient::class.java)
 
         fixture.registerInjectableResource(mockAccreditationClient)
     }
@@ -73,26 +73,25 @@ class StudentRecordTest {
         whenever(mockAccreditationClient.getStudyProgramSubjects(studyProgram))
             .thenReturn(mockSubjects)
 
+        val expectedEvent = StudentRecordCreatedEvent(command, mockSubjects)
+
         fixture.givenNoPriorActivity()
             .`when`(command)
-            .expectEvents(StudentRecordCreatedEvent(command))
+            .expectEvents(expectedEvent)
+            .expectSuccessfulHandlerExecution()
     }
 
     @Test
     fun `should fail when creating student record with invalid student id`() {
-        val invalidId = "1234"
-
         org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
-            StudentId(invalidId)
+            StudentId("1234")
         }
     }
 
     @Test
     fun `should fail when creating student record with non-numeric student id`() {
-        val invalidId = "ABC123"
-
         org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
-            StudentId(invalidId)
+            StudentId("ABC123")
         }
     }
 
@@ -117,9 +116,11 @@ class StudentRecordTest {
         whenever(mockAccreditationClient.getStudyProgramSubjects(studyProgram))
             .thenReturn(mockSubjects)
 
+        val expectedEvent = StudentRecordCreatedEvent(command, mockSubjects)
+
         fixture.givenNoPriorActivity()
             .`when`(command)
-            .expectEvents(StudentRecordCreatedEvent(command))
+            .expectEvents(expectedEvent)
             .expectSuccessfulHandlerExecution()
     }
 
@@ -138,9 +139,11 @@ class StudentRecordTest {
         whenever(mockAccreditationClient.getStudyProgramSubjects(studyProgram))
             .thenReturn(emptyList())
 
+        val expectedEvent = StudentRecordCreatedEvent(command, emptyList())
+
         fixture.givenNoPriorActivity()
             .`when`(command)
-            .expectEvents(StudentRecordCreatedEvent(command))
+            .expectEvents(expectedEvent)
             .expectSuccessfulHandlerExecution()
     }
 }

@@ -47,16 +47,14 @@ class StudentRecord {
     constructor()
 
     @CommandHandler
-    fun createStudentRecordCommand(
+    constructor(
         command: CreateStudentRecordCommand,
         client: AccreditationClient
     ) {
         val subjects = client.getStudyProgramSubjects(command.studyProgram)
 
         val event = StudentRecordCreatedEvent(
-            id = command.id,
-            ects = command.ects,
-            studyProgram = command.studyProgram,
+            command = command,
             subjects = subjects
         )
 
@@ -66,19 +64,13 @@ class StudentRecord {
     @EventSourcingHandler
     fun on(event: StudentRecordCreatedEvent) {
         this.id = event.id
-
         this.ects = event.ects
         this.studyProgram = event.studyProgram
-
         this.gpa = GPA(5.0)
-
         this.enrollmentYear = event.id.enrollmentYear()
-
         this.winterSemesterNumber = 0
         this.summerSemesterNumber = 0
-
-        this.createdAt = LocalDateTime.now()
-
+        this.createdAt = LocalDateTime.now().withNano(0)
         this.passedSubjects = mutableListOf()
 
         this.subjectSlots = event.subjects.mapIndexed { index, code ->
@@ -87,7 +79,7 @@ class StudentRecord {
                 subjectId = code,
                 electiveSubjectGroup = null,
                 status = SubjectSlotStatus.NOT_ENROLLED,
-                student = this,
+                studentId = this.id,
                 exam = null
             )
         }.toMutableList()

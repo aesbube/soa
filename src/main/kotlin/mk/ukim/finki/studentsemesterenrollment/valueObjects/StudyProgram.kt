@@ -15,7 +15,7 @@ data class StudyProgram(val studyProgram: String) {
         INFORMATION_TECHNOLOGIES("Примена на информациски технологии"),
         COMPUTER_ENGINEERING("Компјутерско инженерство"),
         COMPUTER_SCIENCE("Компјутерски науки"),
-        CYBER_SECURITY("Интернет, мрежи и безбедност");
+        CYBER_SECURITY("Интернет мрежи и безбедност");
 
         fun toStudyProgram(): StudyProgram = StudyProgram(programName)
     }
