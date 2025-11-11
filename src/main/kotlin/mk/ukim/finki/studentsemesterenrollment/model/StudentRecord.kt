@@ -32,7 +32,7 @@ class StudentRecord {
     @Embedded
     private lateinit var studyProgram: StudyProgram
 
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "studentId")
     private var subjectSlots: MutableList<SubjectSlot> = mutableListOf()
 
     @OneToMany

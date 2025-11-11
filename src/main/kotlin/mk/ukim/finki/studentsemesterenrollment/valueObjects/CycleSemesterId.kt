@@ -16,6 +16,8 @@ data class CycleSemesterId(
     override fun toString(): String {
         return value
     }
+
+    fun semesterId(): SemesterId = SemesterId(value.take(9))
 //
 //    init {
 //        require(cycle.number in 1..3) { "Cycle must be a positive number" }

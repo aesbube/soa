@@ -12,7 +12,7 @@ data class ElectiveSubjectGroup private constructor(
 
         fun from(value: String): ElectiveSubjectGroup {
             require(VALID_PATTERN.matches(value)) {
-                "Invalid ElectiveSubjectGroup format. Expected format: F##L#S or F##L#W"
+                "Invalid ElectiveSubjectGroup format. Expected format: F##L#S or F##L#W. Found $value"
             }
             return ElectiveSubjectGroup(value)
         }

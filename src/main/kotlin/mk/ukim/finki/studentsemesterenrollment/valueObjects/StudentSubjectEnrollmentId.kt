@@ -22,4 +22,8 @@ data class StudentSubjectEnrollmentId(
         return SubjectCode(value.split("-").last())
     }
 
+    fun electiveSubjectGroup(): ElectiveSubjectGroup = ElectiveSubjectGroup.from(subjectCode().value.take(6))
+
+    fun semesterEnrollmentId() = StudentSemesterEnrollmentId(value.take(18))
+
 }

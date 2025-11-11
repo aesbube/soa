@@ -2,11 +2,13 @@ package mk.ukim.finki.studentsemesterenrollment.model
 
 import jakarta.persistence.*
 import mk.ukim.finki.studentsemesterenrollment.commands.*
+import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.events.*
 import mk.ukim.finki.studentsemesterenrollment.model.dto.StudentSemesterEnrollmentDto
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSubjectEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.*
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
 import org.axonframework.commandhandling.CommandHandler
@@ -17,6 +19,7 @@ import org.axonframework.spring.stereotype.Aggregate
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+import java.util.concurrent.CompletableFuture
 import kotlin.jvm.optionals.getOrNull
 
 
@@ -53,36 +56,54 @@ class StudentSemesterEnrollment {
         AggregateLifecycle.apply(event)
     }
 
-    @CommandHandler
-    fun startEnrollment(command: StartRegularEnrollmentCommand) {
-        val event = StartStudentSemesterEnrollmentEvent(command)
-        this.on(event)
-        AggregateLifecycle.apply(event)
-    }
+//    @CommandHandler
+//    fun startEnrollment(command: StartRegularEnrollmentCommand) {
+//        val event = StartStudentSemesterEnrollmentEvent(command)
+//        this.on(event)
+//        AggregateLifecycle.apply(event)
+//    }
 
     fun on(event: StartStudentSemesterEnrollmentEvent) {
         this.id = event.id
-        this.student = event.studentId
-        this.semester = event.semesterCode
+        this.student = event.id.studentIndex()
+        this.semester = event.id.semesterCode()
         this.enrollmentStatus = EnrollmentStatus.INITIATED
     }
 
     @CommandHandler
-    fun updatePaymentStatus(command: ConfirmRegularEnrollmentCommand) {
-        val event = ConfirmRegularEnrollmentEvent(command)
+    fun updatePaymentStatus(command: UpdatePaymentStatusCommand) {
+        val event = UpdatePaymentStatusEvent(command)
 
         this.on(event)
         AggregateLifecycle.apply(event)
     }
 
-    fun on(event: UpdatePaymentStatusCommand) {
+    fun on(event: UpdatePaymentStatusEvent) {
         this.enrollmentStatus = EnrollmentStatus.COMPLETED;
         this.lastUpdatedAt = LocalDateTime.now()
     }
 
     @CommandHandler
-    fun confirmRegularEnrollment(command: ConfirmRegularEnrollmentCommand) {
+    fun confirmRegularEnrollment(
+        command: ConfirmRegularEnrollmentCommand, subjectSlotRepository: SubjectSlotRepository
+    ) {
         val event = ConfirmRegularEnrollmentEvent(command)
+
+        println("AAAAAAAAAAAAA")
+        loggerFor<StudentSemesterEnrollment>().debug("AAAAAAAAAAA")
+        loggerFor<StudentSemesterEnrollment>().debug(enrolledSubjects.joinToString { it.toString() })
+        enrolledSubjects.map {
+            SubjectSlot(
+                subjectId = it.subjectCode(),
+                electiveSubjectGroup = it.electiveSubjectGroup(),
+                status = SubjectSlotStatus.ENROLLED,
+                studentId = it.semesterEnrollmentId().studentIndex(),
+                exam = null,
+            )
+        }.let {
+            loggerFor<StudentSemesterEnrollment>().debug(it.joinToString { it.toString() })
+            subjectSlotRepository.saveAll(it)
+        }
 
         this.on(event)
         AggregateLifecycle.apply(event)
@@ -116,12 +137,13 @@ class StudentSemesterEnrollment {
     @CommandHandler
     fun enrollStudentInFailedSubject(
         command: EnrollStudentInFailedSubjectCommand, subjectJpaRepository: SubjectJpaRepository
-    ) {
+    ): StudentSemesterEnrollmentId {
         val subjects = subjectJpaRepository.findAllByIdIn(command.failedSubjectsCodes)
         val event = EnrollStudentInFailedSubjectEvent(command)
 
         this.on(event)
         AggregateLifecycle.apply(event)
+        return this.id
     }
 
     fun on(event: EnrollStudentInFailedSubjectEvent) {
@@ -162,6 +184,7 @@ class StudentSemesterEnrollment {
     fun provisionallyEnrollStudentOnSubject(
         command: ProvisionallyEnrollStudentOnSubjectCommand,
         subjectJpaRepository: SubjectJpaRepository,
+        studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
     ) {
         val subject = subjectJpaRepository.findById(command.subjectCode)
             .orElseThrow { IllegalArgumentException("Subject with code ${command.subjectCode} not found") }
@@ -175,6 +198,14 @@ class StudentSemesterEnrollment {
         }
         val event = StudentProvisionallyEnrolledOnSubjectEvent(command = command)
 
+        studentSubjectEnrollmentJpaRepository.save(StudentSubjectEnrollment(
+            studentSubjectEnrollmentId = StudentSubjectEnrollmentId(
+                semesterEnrollmentId = event.studentSemesterEnrollmentId,
+                subjectCode = event.subjectCode,
+            ),
+            subject = subject,
+            valid = true
+        ))
         this.on(event)
         AggregateLifecycle.apply(event)
     }
@@ -203,7 +234,8 @@ class StudentSemesterEnrollment {
         studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository,
         commandGateway: CommandGateway
     ) {
-        val previousSemesterEnrollment = studentSemesterEnrollmentJpaRepository.findById(command.previousStudentSemesterEnrollmentId).getOrNull()
+        val previousSemesterEnrollment =
+            studentSemesterEnrollmentJpaRepository.findById(command.previousStudentSemesterEnrollmentId).getOrNull()
 
         // todo: validations...
         val valid = validate()
@@ -214,6 +246,7 @@ class StudentSemesterEnrollment {
                 this.on(event, commandGateway)
                 AggregateLifecycle.apply(event)
             }
+
             false -> {
                 val event = EnrollmentConditionsValidationFailedEvent(command)
                 this.on(event)
@@ -253,8 +286,6 @@ class StudentSemesterEnrollment {
     fun toDto() = StudentSemesterEnrollmentDto(
         index = student.index,
         cycleSemesterId = semester.value,
-        lastModifiedDate = lastUpdatedAt,
-        createdDate = createdAt,
     )
 
 }

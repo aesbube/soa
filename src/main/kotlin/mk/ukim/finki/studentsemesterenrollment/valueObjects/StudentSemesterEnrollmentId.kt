@@ -22,8 +22,8 @@ data class StudentSemesterEnrollmentId(
         studentIndex: StudentId
     ) : this("${semesterCode.value}-${studentIndex.index}")
 
-    fun semesterCode(): SemesterId {
-        return SemesterId(id.substring(0, 9))
+    fun semesterCode(): CycleSemesterId {
+        return CycleSemesterId(id.substring(0, 9))
     }
 
     fun studentIndex(): StudentId {

@@ -51,6 +51,15 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+
+    testImplementation("io.rest-assured:rest-assured:5.3.2")
+    testImplementation("io.rest-assured:json-path:5.3.2")
+    testImplementation("io.rest-assured:xml-path:5.3.2")
+    testImplementation("io.rest-assured:kotlin-extensions:5.3.2")
+
+    testImplementation("io.rest-assured:json-schema-validator:5.3.2")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 kotlin {

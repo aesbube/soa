@@ -7,10 +7,12 @@ import mk.ukim.finki.studentsemesterenrollment.commands.StartRegularEnrollmentCo
 import mk.ukim.finki.studentsemesterenrollment.commands.UpdatePaymentStatusCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.ValidateEnrollmentConditionsCommand
 import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
+import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSubjectEnrollmentId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyCycle
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.previousSemesterId
@@ -30,14 +32,16 @@ class StudentSemesterEnrollmentCommandService(
         studentIndex: String,
         cycleId: String,
         semesterId: String,
-    ): CompletableFuture<StudentSemesterEnrollmentId> {
+    ): StudentSemesterEnrollmentId {
         return commandGateway.send<StudentSemesterEnrollmentId>(
             StartRegularEnrollmentCommand(
-                semesterCode = CycleSemesterId(
-                    semesterId = SemesterId(semesterId),
-                    cycle = StudyCycle.valueOf(cycleId)
+                studentSemesterEnrollmentId = StudentSemesterEnrollmentId(
+                    semesterCode = CycleSemesterId(
+                        semesterId = SemesterId(semesterId),
+                        cycle = StudyCycle.valueOf(cycleId)
+                    ),
+                    studentIndex = StudentId(studentIndex),
                 ),
-                studentId = StudentId(studentIndex),
             )
         ).thenCompose { _ ->
             enrollStudentInMandatoryFailedSubjects(
@@ -48,7 +52,7 @@ class StudentSemesterEnrollmentCommandService(
         }.exceptionally { throwable ->
             logger.debug("Error during enrollment process: ${throwable.message}")
             throw RuntimeException("Enrollment process failed", throwable)
-        }
+        }.join()
     }
 
     // 2. Enroll in failed mandatory subjects
@@ -73,12 +77,10 @@ class StudentSemesterEnrollmentCommandService(
     fun provisionallyEnrollStudentOnSubject(
         id: String,
         subjectCode: String,
-    ) {
-        commandGateway.send<Void>(ProvisionallyEnrollStudentOnSubjectCommand(
+    ) = commandGateway.send<Any>(ProvisionallyEnrollStudentOnSubjectCommand(
             studentSemesterEnrollmentId = StudentSemesterEnrollmentId(id),
             subjectCode = SubjectCode(subjectCode)
         ))
-    }
 
     fun validateEnrollmentConditions(
         id: StudentSemesterEnrollmentId,
@@ -88,7 +90,7 @@ class StudentSemesterEnrollmentCommandService(
             previousStudentSemesterEnrollmentId = StudentSemesterEnrollmentId(
                 studentIndex = id.studentIndex(),
                 semesterCode = CycleSemesterId(
-                    semesterId = id.semesterCode().previousSemesterId,
+                    semesterId = id.semesterCode().semesterId().previousSemesterId,
                     cycle = StudyCycle.UNDERGRADUATE
                 )
             )

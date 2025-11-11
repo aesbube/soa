@@ -49,8 +49,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: soa
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - student_semester_enrollment_services_net
 
@@ -58,6 +56,9 @@ services:
     build:
       context: .
       dockerfile: dockerfile.test
+    volumes:
+      - ./build:/app/build
+      - ./test-results:/app/build/test-results
     container_name: student-semester-enrollment
     ports:
       - "8092:8080"
@@ -85,6 +86,3 @@ networks:
   student_semester_enrollment_services_net:
     name: student_semester_enrollment_services_net
     driver: bridge
-
-volumes:
-  postgres_data:

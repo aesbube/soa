@@ -9,7 +9,8 @@ import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectSlotStatus
 @Entity
 data class SubjectSlot(
     @Id
-    val id: Long,
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
     val subjectId: SubjectCode,
     @Embedded
     val electiveSubjectGroup: ElectiveSubjectGroup?,

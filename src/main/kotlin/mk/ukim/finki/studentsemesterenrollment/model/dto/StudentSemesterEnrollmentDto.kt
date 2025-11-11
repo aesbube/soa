@@ -10,6 +10,4 @@ import java.time.LocalDateTime
 data class StudentSemesterEnrollmentDto(
     val index: String,
     val cycleSemesterId: String,
-    val lastModifiedDate: LocalDateTime,
-    val createdDate: LocalDateTime,
 )

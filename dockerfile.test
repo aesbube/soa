@@ -13,3 +13,4 @@ RUN ./gradlew dependencies --no-daemon || true
 COPY src src
 
 CMD ["./gradlew", "test", "--tests", "mk.ukim.finki.studentsemesterenrollment.StudentRecordTest", "--no-daemon"]
+CMD ["./gradlew", "test", "--tests", "mk.ukim.finki.studentsemesterenrollment.StudentSemesterEnrollmentE2ETests", "--no-daemon", "--stacktrace"]

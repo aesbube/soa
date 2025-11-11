@@ -10,7 +10,7 @@ data class SemesterId(
     val value: String) {
     init {
         require(Regex("""^\d{4}-\d{2}-[WS]$""").matches(value)) {
-            "Invalid SemesterId format. The format should be YYYY-YY-W/S (2024-25-W or 2024-25-S)"
+            "Invalid SemesterId format. The format should be YYYY-YY-W/S (2024-25-W or 2024-25-S). Actual: $value"
         }
     }
 
