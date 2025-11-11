@@ -12,5 +12,4 @@ interface AccreditationClient {
 
     @GetMapping("/api/accreditations/study-program-subjects/{studyProgram}")
     fun getStudyProgramSubjects(@PathVariable studyProgram: StudyProgram): List<SubjectCode>
-
 }

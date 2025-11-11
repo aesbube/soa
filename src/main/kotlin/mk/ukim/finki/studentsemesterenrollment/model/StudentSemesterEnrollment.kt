@@ -52,6 +52,13 @@ class StudentSemesterEnrollment {
         AggregateLifecycle.apply(event)
     }
 
+    @CommandHandler
+    fun startEnrollment(command: StartRegularEnrollmentCommand) {
+        val event = StartStudentSemesterEnrollmentEvent(command)
+        this.on(event)
+        AggregateLifecycle.apply(event)
+    }
+
     fun on(event: StartStudentSemesterEnrollmentEvent) {
         this.id = event.id
         this.student = event.studentId

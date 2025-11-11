@@ -2,6 +2,7 @@ package mk.ukim.finki.studentsemesterenrollment.web
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import kotlinx.coroutines.future.await
 import mk.ukim.finki.studentsemesterenrollment.service.StudentSemesterEnrollmentService
 import mk.ukim.finki.studentsemesterenrollment.service.impl.StudentSemesterEnrollmentCommandService
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSemesterEnrollmentId
@@ -38,12 +39,12 @@ class StudentSemesterEnrollmentRestApi(
     fun getById(@PathVariable id: StudentSemesterEnrollmentId) = studentSemesterEnrollmentMapper.getById(id)
 
     @PostMapping
-    fun startEnrollment(@RequestBody request: StartEnrollmentRequest) = studentSemesterEnrollmentCommandService
+    suspend fun startEnrollment(@RequestBody request: StartEnrollmentRequest) = studentSemesterEnrollmentCommandService
         .startEnrollment(
             studentIndex = request.studentIndex,
             cycleId = request.cycleId,
             semesterId = request.semesterId,
-        )
+        ).await<StudentSemesterEnrollmentId>()
 
     @PutMapping("/{id}/{subjectCode}")
     fun provisionallyEnrollStudentOnSubject(

@@ -29,8 +29,8 @@ class StudentSemesterEnrollmentCommandService(
         studentIndex: String,
         cycleId: String,
         semesterId: String,
-    ): CompletableFuture<Void> {
-        return commandGateway.send<Void>(
+    ): CompletableFuture<StudentSemesterEnrollmentId> {
+        return commandGateway.send<StudentSemesterEnrollmentId>(
             StartRegularEnrollmentCommand(
                 semesterCode = CycleSemesterId(
                     semesterId = SemesterId(semesterId),
@@ -55,7 +55,7 @@ class StudentSemesterEnrollmentCommandService(
         studentIndex: String,
         semesterId: String,
         cycleId: String,
-    ): CompletableFuture<Void> {
+    ): CompletableFuture<StudentSemesterEnrollmentId> {
         return commandGateway.send(EnrollStudentInFailedSubjectCommand(
             id = StudentSemesterEnrollmentId(
                 studentIndex = StudentId(studentIndex),

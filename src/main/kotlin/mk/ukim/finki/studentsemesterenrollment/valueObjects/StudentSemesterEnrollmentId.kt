@@ -9,8 +9,11 @@ data class StudentSemesterEnrollmentId(
     @Column(name="student_semester_enrollment_id")
     val id: String) {
     init {
-        require(id.length == 16 && id.matches(Regex("^\\d{4}-\\d{2}-(W|S)-\\d{6}$"))) {
-            throw IllegalArgumentException("Invalid student semester enrollment id: $id")
+        require(id.length == 18) {
+            throw IllegalArgumentException("Invalid student semester enrollment id: $id. Length must be 18 chars.")
+        }
+        require(id.matches(Regex("^\\d{4}-\\d{2}-(W|S)-\\d-\\d{6}$"))) {
+            throw IllegalArgumentException("Invalid student semester enrollment id: $id. Must be in format [yyyy-yy-(W|S)-CID-INDEX]")
         }
     }
 
@@ -24,7 +27,7 @@ data class StudentSemesterEnrollmentId(
     }
 
     fun studentIndex(): StudentId {
-        return StudentId(id.substring(10, 16))
+        return StudentId(id.split("-").last())
     }
 
     override fun toString(): String {
