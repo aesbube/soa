@@ -82,4 +82,9 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    jvmArgs = listOf(
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
+    )
+    forkEvery = 0
+    maxParallelForks = 1
 }

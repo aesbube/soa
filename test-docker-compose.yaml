@@ -62,6 +62,7 @@ services:
     container_name: student-semester-enrollment
     ports:
       - "8092:8080"
+      - "5005:5005"
     depends_on:
       - broker
       - postgres
