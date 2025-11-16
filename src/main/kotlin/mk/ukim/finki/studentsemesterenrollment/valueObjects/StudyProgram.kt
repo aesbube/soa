@@ -1,5 +1,8 @@
 package mk.ukim.finki.studentsemesterenrollment.valueObjects
 
+import jakarta.persistence.Embeddable
+
+@Embeddable
 data class StudyProgram(val studyProgram: String) {
     init {
         require(studyProgram.length in 4..254) {

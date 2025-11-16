@@ -1,13 +1,17 @@
 package mk.ukim.finki.studentsemesterenrollment.client.fallbacks
 
 import mk.ukim.finki.studentsemesterenrollment.client.AccreditationClient
+import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyProgram
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
 import org.springframework.stereotype.Component
 
 @Component
 class AccreditationClientFallback : AccreditationClient {
+    private val logger = loggerFor<AccreditationClientFallback>()
     override fun getStudyProgramSubjects(studyProgram: StudyProgram): List<SubjectCode> {
+
+        logger.debug("FALLBACK TRIGGERED for study program: ${studyProgram.studyProgram}")
         val mockSubjects = when (studyProgram.studyProgram) {
 
             StudyProgram.Type.COMPUTER_SCIENCE.programName -> listOf(

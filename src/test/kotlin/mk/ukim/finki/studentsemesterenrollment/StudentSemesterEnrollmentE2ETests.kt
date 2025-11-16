@@ -6,7 +6,9 @@ import io.mockk.unmockkStatic
 import io.restassured.RestAssured
 import io.restassured.config.LogConfig
 import io.restassured.http.ContentType
+import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SemesterSnapshot
 import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SubjectAggregateSnapshot
+import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordCommand
 import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.config.Constants
 import mk.ukim.finki.studentsemesterenrollment.events.CreateSubjectEvent
@@ -15,20 +17,31 @@ import mk.ukim.finki.studentsemesterenrollment.handlers.EventMessagingEventHandl
 import mk.ukim.finki.studentsemesterenrollment.handlers.SemesterStateUpdatedEvent
 import mk.ukim.finki.studentsemesterenrollment.handlers.StudentCreatedEvent
 import mk.ukim.finki.studentsemesterenrollment.kafka.KafkaProducer
+import mk.ukim.finki.studentsemesterenrollment.model.StudentRecord
 import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
+import mk.ukim.finki.studentsemesterenrollment.model.SubjectSlot
 import mk.ukim.finki.studentsemesterenrollment.model.dto.SubjectEventData
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SemesterSnapshotRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.ClassesPerWeek
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.ECTSCredits
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.GPA
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterState
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterType
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyCycle
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyProgram
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyYear
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectAbbreviation
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectName
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectSlotStatus
+import org.axonframework.commandhandling.gateway.CommandGateway
 import org.axonframework.eventhandling.gateway.EventGateway
 import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.AfterEach
@@ -82,6 +95,18 @@ class StudentSemesterEnrollmentE2ETests {
     @Autowired
     private lateinit var eventGateway: EventGateway
 
+    @Autowired
+    private lateinit var semesterSnapshotRepository: SemesterSnapshotRepository
+
+    @Autowired
+    private lateinit var studentRecordRepository: StudentRecordJpaRepository
+
+    @Autowired
+    private lateinit var subjectSlotRepository: SubjectSlotRepository
+
+    @Autowired
+    private lateinit var commandGateway: CommandGateway
+
     @LocalServerPort
     private val port: Int = 0
 
@@ -105,39 +130,89 @@ class StudentSemesterEnrollmentE2ETests {
     }
 
     private fun initializeTestData() {
-        // create F18 subjects from finki common-model
-        Constants.subjects.forEach {
-            eventGateway.publish(CreateSubjectEvent(
-                subjectData = it,
-                id = SubjectCode(it.id)
-            ))
+        // Directly save subjects instead of publishing events
+        Constants.subjects.forEach { subjectData ->
+            val subject = SubjectAggregateSnapshot(
+                id = SubjectCode(subjectData.id),
+                name = SubjectName(subjectData.name),
+                abbreviation = SubjectAbbreviation(subjectData.abbreviation),
+                semesterCode = SemesterId(subjectData.semesterCode),
+                ects = ECTSCredits(subjectData.ects),
+                semester = SemesterType.valueOf(subjectData.semester),
+                classesPerWeek = ClassesPerWeek(
+                    lectures = subjectData.classesPerWeek.lectures,
+                    auditoriumClasses = subjectData.classesPerWeek.auditoriumClasses,
+                    labClasses = subjectData.classesPerWeek.labClasses
+                )
+            )
+            subjectSnapshotRepository.save(subject)
         }
 
-        // init first semester
-        eventGateway.publish(SemesterCreatedEvent(
-            semesterId = SemesterId("2021-22-W"),
-            startDate = ZonedDateTime.now(),
-            endDate = ZonedDateTime.now(),
-            enrollmentEndDate = ZonedDateTime.now(),
-            enrollmentStartDate = ZonedDateTime.now(),
-        ))
+        subjectSnapshotRepository.flush() // Ensure it's committed
 
-        // simulate creation of student record
-        eventGateway.publish(StudentCreatedEvent(
-            studyProgram = StudyProgram.Type.COMPUTER_SCIENCE.toStudyProgram(),
-            studentId = "216049"
-        ))
+        // Directly save semester
+        val semester = SemesterSnapshot(
+            id = SemesterId("2021-22-W"),
+            cycleSemesterId = CycleSemesterId(SemesterId("2021-22-W"), StudyCycle.UNDERGRADUATE),
+            state = SemesterState.STUDENTS_ENROLLMENT,
+            enrollmentStartDate = ZonedDateTime.now().toLocalDateTime(),
+            enrollmentEndDate = ZonedDateTime.now().plusDays(21).toLocalDateTime()
+        )
+        semesterSnapshotRepository.save(semester)
+        semesterSnapshotRepository.flush()
 
-        eventGateway.publish(SemesterStateUpdatedEvent(
-            semesterId = SemesterId("2021-22-W"),
-            state = SemesterState.STUDENTS_ENROLLMENT
-        ))
+        createStudentRecordManually("216049")
+    }
+
+    private fun createStudentRecordManually(studentId: String): StudentRecord {
+        val studentRecord = StudentRecord().apply {
+            setPrivateField("id", StudentId(studentId))
+            setPrivateField("ects", ECTSCredits(0))
+            setPrivateField("studyProgram", StudyProgram.Type.COMPUTER_SCIENCE.toStudyProgram())
+            setPrivateField("gpa", GPA(5.0))
+            setPrivateField("enrollmentYear", StudyYear("2021-22"))
+            setPrivateField("winterSemesterNumber", 0)
+            setPrivateField("summerSemesterNumber", 0)
+            setPrivateField("createdAt", LocalDateTime.now().withNano(0))
+            setPrivateField("subjectSlots", mutableListOf<SubjectSlot>())
+            setPrivateField("passedSubjects", mutableListOf<SubjectAggregateSnapshot>())
+        }
+
+        val savedStudentRecord = studentRecordRepository.save(studentRecord)
+        studentRecordRepository.flush()
+
+        val subjects = subjectSnapshotRepository.findAll().take(10).map { it.id }
+        val subjectSlots = subjects.map { code ->
+            SubjectSlot(
+                subjectId = code,
+                electiveSubjectGroup = null,
+                status = SubjectSlotStatus.NOT_ENROLLED,
+                studentId = StudentId(studentId),
+                exam = null
+            )
+        }
+
+        subjectSlotRepository.saveAll(subjectSlots)
+        subjectSlotRepository.flush()
+
+        return savedStudentRecord
+    }
+
+    // Helper extension function
+    private fun Any.setPrivateField(fieldName: String, value: Any?) {
+        val field = this::class.java.getDeclaredField(fieldName)
+        field.isAccessible = true
+        field.set(this, value)
     }
 
     @Test
-    @Transactional
     fun `should start enrollment for student successfully`() {
-        every { LocalDateTime.now() } returns LocalDateTime.parse("2021-09-30T00:08:00")
+//        every { LocalDateTime.now() } returns LocalDateTime.parse("2021-09-30T00:08:00")
+
+        println("Subjects in DB: ${subjectSnapshotRepository.count()}")
+        println("Subjects in DB: ${studentRecordRepository.count()}")
+        println("Semesters in DB: ${semesterSnapshotRepository.count()}")
+        println("First 3 subjects: ${subjectSnapshotRepository.findAll().take(3).map { it.id }}")
 
         val enrollmentRequest = """{
             "studentIndex": "216049",
@@ -156,11 +231,9 @@ class StudentSemesterEnrollmentE2ETests {
         val allStudentEnrollments = studentSemesterEnrollmentJpaRepository.findAll()
         assertEquals(1, allStudentEnrollments.size, "No enrollments found")
     }
-}
-
+//
 //    @Test
 //    fun `complete enrollment workflow - start, enroll subjects, validate, pay, confirm`() {
-//        // Start enrollment
 //        val enrollmentRequest = """{
 //            "studentIndex": "216040",
 //            "cycleId": "UNDERGRADUATE",
@@ -171,44 +244,36 @@ class StudentSemesterEnrollmentE2ETests {
 //            .contentType(ContentType.JSON)
 //            .body(enrollmentRequest)
 //            .post("/student-semester-enrollment")
-//            .then().log().all()  // Log response details
+//            .then().log().all()
 //            .statusCode(200)
 //            .extract()
 //            .asString()
 //
-//        logger.debug("AAAAAAAAA ${enrollmentId}")
-//        println("AAAAAAAAA ${enrollmentId}")
-//
-//        // Enroll on subjects
 //        val subjects = listOf("F18L3W141", "F18L3W142", "F18L3W143")
 //        subjects.forEach { subjectCode ->
 //            RestAssured.given()
 //                .contentType(ContentType.JSON)
 //                .put("/student-semester-enrollment/$enrollmentId/$subjectCode")
-//                .then().log().all()  // Log response details
+//                .then().log().all()
 //                .statusCode(200)
 //        }
 //
-//        // Validate enrollment
 //        RestAssured.given()
 //            .contentType(ContentType.JSON)
 //            .put("/student-semester-enrollment/$enrollmentId/validate")
-//            .then().log().all()  // Log response details
+//            .then().log().all()
 //            .statusCode(200)
 //
-//        // Update payment
 //        RestAssured.given()
 //            .contentType(ContentType.JSON)
 //            .put("/student-semester-enrollment/$enrollmentId/update-payment")
-//            .then().log().all()  // Log response details
+//            .then().log().all()
 //            .statusCode(200)
 //
-//        // Confirm enrollment
 //        RestAssured.given()
 //            .contentType(ContentType.JSON)
 //            .put("/student-semester-enrollment/$enrollmentId/confirm")
-//            .then().log().all()  // Log response details
+//            .then().log().all()
 //            .statusCode(200)
 //    }
-
-// }
+}
