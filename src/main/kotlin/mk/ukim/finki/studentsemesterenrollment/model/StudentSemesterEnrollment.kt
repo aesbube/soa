@@ -1,10 +1,13 @@
 package mk.ukim.finki.studentsemesterenrollment.model
 
 import jakarta.persistence.*
+import mk.ukim.finki.studentsemesterenrollment.client.SemesterClient
 import mk.ukim.finki.studentsemesterenrollment.commands.*
 import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.events.*
 import mk.ukim.finki.studentsemesterenrollment.model.dto.StudentSemesterEnrollmentDto
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SemesterSnapshotRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSubjectEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
@@ -15,10 +18,14 @@ import org.axonframework.commandhandling.CommandHandler
 import org.axonframework.commandhandling.gateway.CommandGateway
 import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle
+import org.axonframework.modelling.command.Repository
 import org.axonframework.spring.stereotype.Aggregate
+import org.springframework.cglib.core.Local
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.repository.findByIdOrNull
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.concurrent.CompletableFuture
 import kotlin.jvm.optionals.getOrNull
 
@@ -50,7 +57,32 @@ class StudentSemesterEnrollment {
     @CommandHandler
     constructor(
         command: StartRegularEnrollmentCommand,
+        semesterRepository: SemesterSnapshotRepository,
+        studentRepository: StudentRecordJpaRepository
     ) {
+        val id = command.studentSemesterEnrollmentId
+        val semesterCode = id.semesterCode()
+        val studentIndex = id.studentIndex()
+
+        val semester = semesterRepository.findByIdOrNull(semesterCode.semesterId())
+            ?: throw RuntimeException("Semester with code ${semesterCode.semesterId()} not found")
+
+        if (semester.state != SemesterState.STUDENTS_ENROLLMENT) {
+            throw RuntimeException("Can not enroll in semester ${semester.id}. Semester state isn't ${SemesterState.STUDENTS_ENROLLMENT} but ${semester.state}")
+        }
+
+        val now = LocalDateTime.now()
+
+        if (now < semester.enrollmentStartDate) {
+            throw RuntimeException("Can not enroll in semester ${semester.id}. Enrollment has not started. Now: $now enrollmentStartDate ${semester.enrollmentStartDate}")
+        }
+
+        if (now > semester.enrollmentEndDate) {
+            throw RuntimeException("Can not enroll in semester ${semester.id}. Enrollment has finished. Now: $now enrollmentEndDate ${semester.enrollmentEndDate}")
+        }
+
+        studentRepository.findByIdOrNull(studentIndex) ?: throw RuntimeException("No student found with index ${studentIndex}.")
+
         val event = StartStudentSemesterEnrollmentEvent(command)
         this.on(event)
         AggregateLifecycle.apply(event)
@@ -136,7 +168,8 @@ class StudentSemesterEnrollment {
 
     @CommandHandler
     fun enrollStudentInFailedSubject(
-        command: EnrollStudentInFailedSubjectCommand, subjectJpaRepository: SubjectJpaRepository
+        command: EnrollStudentInFailedSubjectCommand,
+        subjectJpaRepository: SubjectJpaRepository,
     ): StudentSemesterEnrollmentId {
         val subjects = subjectJpaRepository.findAllByIdIn(command.failedSubjectsCodes)
         val event = EnrollStudentInFailedSubjectEvent(command)

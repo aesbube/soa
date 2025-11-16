@@ -8,6 +8,7 @@ import mk.ukim.finki.studentsemesterenrollment.commands.UpdatePaymentStatusComma
 import mk.ukim.finki.studentsemesterenrollment.commands.ValidateEnrollmentConditionsCommand
 import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
@@ -23,6 +24,7 @@ import java.util.concurrent.CompletableFuture
 @Service
 class StudentSemesterEnrollmentCommandService(
     private val commandGateway: CommandGateway,
+    private val studentRecordJpaRepository: StudentRecordJpaRepository,
 ) {
 
     private val logger = loggerFor<StudentSemesterEnrollmentCommandService>()
@@ -61,16 +63,31 @@ class StudentSemesterEnrollmentCommandService(
         semesterId: String,
         cycleId: String,
     ): CompletableFuture<StudentSemesterEnrollmentId> {
-        return commandGateway.send(EnrollStudentInFailedSubjectCommand(
-            id = StudentSemesterEnrollmentId(
-                studentIndex = StudentId(studentIndex),
-                semesterCode = CycleSemesterId(
-                    semesterId = SemesterId(semesterId),
-                    cycle = StudyCycle.valueOf(cycleId)
-                )
-            ),
-            failedSubjectsCodes = listOf<SubjectCode>() // todo: fetch failed subjects
-        ))
+
+        val enrollmentId = StudentSemesterEnrollmentId(
+            studentIndex = StudentId(studentIndex),
+            semesterCode = CycleSemesterId(
+                semesterId = SemesterId(semesterId),
+                cycle = StudyCycle.valueOf(cycleId)
+            )
+        )
+
+        val studentRecord = studentRecordJpaRepository.findById(StudentId(studentIndex))
+            .orElseThrow { IllegalArgumentException("StudentRecord not found for $studentIndex") }
+
+        val failedSubjects = studentRecord.computeFailedSubjects()
+
+        if (failedSubjects.isEmpty()) {
+            return CompletableFuture.completedFuture(enrollmentId)
+        }
+
+        // 4. Send the command to the aggregate
+        val command = EnrollStudentInFailedSubjectCommand(
+            id = enrollmentId,
+            failedSubjectsCodes = failedSubjects
+        )
+
+        return commandGateway.send(command)
     }
 
     // 3. Provisionally enroll student

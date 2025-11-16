@@ -46,7 +46,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("com.h2database:h2:2.2.224")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.0")
+    testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.axonframework:axon-test:4.7.6")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")

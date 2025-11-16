@@ -84,4 +84,9 @@ class StudentRecord {
             )
         }.toMutableList()
     }
+
+    fun computeFailedSubjects() = subjectSlots
+            .map { it.subjectId }
+            .filter { subjectId -> subjectId !in passedSubjects.map { it.id } }
+    // todo: add mandatory flag in subject and filter out non-mandatory subjects
 }

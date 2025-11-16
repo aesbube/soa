@@ -11,12 +11,53 @@ class AccreditationClientFallback : AccreditationClient {
         val mockSubjects = when (studyProgram.studyProgram) {
 
             StudyProgram.Type.COMPUTER_SCIENCE.programName -> listOf(
-                SubjectCode("F18L1W101"),
-                SubjectCode("F18L2W102"),
+                SubjectCode("F18L1W020"),
+                SubjectCode("F18L1W033"),
+                SubjectCode("F18L1W007"),
+                SubjectCode("F18L1W031"),
+                SubjectCode("F18L1W018"),
+
+                SubjectCode("F18L1S032"),
+                SubjectCode("F18L1S016"),
+                SubjectCode("F18L1S003"),
+                SubjectCode("F18L1S034"),
+                SubjectCode("F18L1S146"),
+
+                SubjectCode("F18L2W014"),
+                SubjectCode("F18L2W006"),
+                SubjectCode("F18L2W109"),
+                SubjectCode("F18L2W001"),
+                SubjectCode("F18L2W140"),
+
+                SubjectCode("F18L2S029"),
+                SubjectCode("F18L2S017"),
+                SubjectCode("F18L2S030"),
+                SubjectCode("F18L2S114"),
+                SubjectCode("F18L2S110"),
+
+                SubjectCode("F18L3W035"),
+                SubjectCode("F18L3W037"),
+                SubjectCode("F18L3W008"),
+                SubjectCode("F18L3W024"),
+                SubjectCode("F18L3W004"),
+
+                SubjectCode("F18L3S118"),
+                SubjectCode("F18L3S036"),
+                SubjectCode("F18L3S010"),
+                SubjectCode("F18L3S087"),
+                SubjectCode("F18L3S039"),
+
+                SubjectCode("F18L3W038"),
+                SubjectCode("F18L3W075"),
+                SubjectCode("F18L3W021"),
+                SubjectCode("F18L3W074"),
                 SubjectCode("F18L3W103"),
-                SubjectCode("F18L3S201"),
-                SubjectCode("F18L2S202"),
-                SubjectCode("F18L3S203")
+
+                SubjectCode("F18L3S168"),
+                SubjectCode("F18L3S155"),
+                SubjectCode("F18L3S159"),
+                SubjectCode("F18L3S022"),
+                SubjectCode("F18L3S086")
             )
 
             StudyProgram.Type.SOFTWARE_ENGINEERING.programName -> listOf(
