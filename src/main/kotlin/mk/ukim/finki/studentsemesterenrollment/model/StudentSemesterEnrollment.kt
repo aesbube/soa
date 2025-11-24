@@ -124,15 +124,22 @@ class StudentSemesterEnrollment {
         println("AAAAAAAAAAAAA")
         loggerFor<StudentSemesterEnrollment>().debug("AAAAAAAAAAA")
         loggerFor<StudentSemesterEnrollment>().debug(enrolledSubjects.joinToString { it.toString() })
+
         enrolledSubjects.map {
+            subjectSlotRepository.findBySubjectIdAndStudentId(it.subjectCode().value, it.semesterEnrollmentId().studentIndex().index)
+        }.map {
             SubjectSlot(
-                subjectId = it.subjectCode(),
-                electiveSubjectGroup = it.electiveSubjectGroup(),
+                id = it.id,
+                studentId = it.studentId,
+                electiveSubjectGroup = it.electiveSubjectGroup,
                 status = SubjectSlotStatus.ENROLLED,
-                studentId = it.semesterEnrollmentId().studentIndex(),
                 exam = null,
+                placeholder = false,
+                mandatory = it.mandatory,
+                subjectId = it.subjectId,
             )
-        }.let {
+        }
+            .let {
             loggerFor<StudentSemesterEnrollment>().debug(it.joinToString { it.toString() })
             subjectSlotRepository.saveAll(it)
         }
@@ -320,5 +327,8 @@ class StudentSemesterEnrollment {
         index = student.index,
         cycleSemesterId = semester.value,
     )
+
+    fun getStatus() = this.enrollmentStatus
+    fun getId() = this.id
 
 }

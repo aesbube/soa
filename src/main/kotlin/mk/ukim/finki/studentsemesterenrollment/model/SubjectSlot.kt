@@ -4,13 +4,13 @@ import jakarta.persistence.*
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.ElectiveSubjectGroup
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
+import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectSlotId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectSlotStatus
 
 @Entity
 data class SubjectSlot(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    @EmbeddedId
+    val id: SubjectSlotId,
     val subjectId: SubjectCode,
     @Embedded
     val electiveSubjectGroup: ElectiveSubjectGroup?,
@@ -18,7 +18,9 @@ data class SubjectSlot(
     @Embedded
     val studentId: StudentId,
     @OneToOne(mappedBy = "subjectSlot")
-    val exam: SubjectExam?
+    val exam: SubjectExam?,
+    val mandatory: Boolean,
+    val placeholder: Boolean,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

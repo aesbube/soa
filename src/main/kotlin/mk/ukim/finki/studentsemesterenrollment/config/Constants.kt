@@ -79,6 +79,240 @@ object Constants {
     )
     val subjects = listOf(
         SubjectEventData(
+            id = "F18L3S__1",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3S__2",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3S__3",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3S__4",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3S__5",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3S__6",
+            name = "Изборен предмет со код што започнува на F18L3S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__1",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__2",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__3",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__4",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__5",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L3W__6",
+            name = "Изборен предмет со код што започнува на F18L3W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L2W__1",
+            name = "Изборен предмет со код што започнува на F18L2W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L2W__2",
+            name = "Изборен предмет со код што започнува на F18L2W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L2S__1",
+            name = "Изборен предмет со код што започнува на F18L2S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L2S__2",
+            name = "Изборен предмет со код што започнува на F18L2S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L1S__1",
+            name = "Изборен предмет со код што започнува на F18L1S",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "SUMMER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
+            id = "F18L1W__1",
+            name = "Изборен предмет со код што започнува на F18L1W",
+            abbreviation = "NULL",
+            semesterCode = "2025-26-W",
+            ects = 6,
+            semester = "WINTER",
+            classesPerWeek = ClassesPerWeekData(
+                lectures = 0,
+                auditoriumClasses = 0,
+                labClasses = 0
+            )
+        ),
+        SubjectEventData(
             id = "F18L1W004",
             name = "Спорт и здравје",
             abbreviation = "NULL",

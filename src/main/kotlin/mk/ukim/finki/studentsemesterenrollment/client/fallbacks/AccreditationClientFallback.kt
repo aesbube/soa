@@ -25,43 +25,43 @@ class AccreditationClientFallback : AccreditationClient {
                 SubjectCode("F18L1S016"),
                 SubjectCode("F18L1S003"),
                 SubjectCode("F18L1S034"),
-                SubjectCode("F18L1S146"),
+                SubjectCode("F18L1S__1"), //elective
 
                 SubjectCode("F18L2W014"),
                 SubjectCode("F18L2W006"),
-                SubjectCode("F18L2W109"),
                 SubjectCode("F18L2W001"),
-                SubjectCode("F18L2W140"),
+                SubjectCode("F18L2W__1"),
+                SubjectCode("F18L2W__2"),
 
                 SubjectCode("F18L2S029"),
                 SubjectCode("F18L2S017"),
                 SubjectCode("F18L2S030"),
-                SubjectCode("F18L2S114"),
-                SubjectCode("F18L2S110"),
+                SubjectCode("F18L2S__1"),
+                SubjectCode("F18L2S__2"),
 
                 SubjectCode("F18L3W035"),
                 SubjectCode("F18L3W037"),
-                SubjectCode("F18L3W008"),
-                SubjectCode("F18L3W024"),
+                SubjectCode("F18L3W__1"),
+                SubjectCode("F18L3W__2"),
                 SubjectCode("F18L3W004"),
 
-                SubjectCode("F18L3S118"),
+                SubjectCode("F18L3S__1"),
                 SubjectCode("F18L3S036"),
                 SubjectCode("F18L3S010"),
-                SubjectCode("F18L3S087"),
+                SubjectCode("F18L3S__2"),
                 SubjectCode("F18L3S039"),
 
                 SubjectCode("F18L3W038"),
-                SubjectCode("F18L3W075"),
-                SubjectCode("F18L3W021"),
-                SubjectCode("F18L3W074"),
-                SubjectCode("F18L3W103"),
+                SubjectCode("F18L3W__3"),
+                SubjectCode("F18L3W__4"), // elective
+                SubjectCode("F18L3W__5"),
+                SubjectCode("F18L3W__6"),
 
                 SubjectCode("F18L3S168"),
-                SubjectCode("F18L3S155"),
-                SubjectCode("F18L3S159"),
-                SubjectCode("F18L3S022"),
-                SubjectCode("F18L3S086")
+                SubjectCode("F18L3S__3"),
+                SubjectCode("F18L3S__4"),
+                SubjectCode("F18L3S__5"),
+                SubjectCode("F18L3S__6")
             )
 
             StudyProgram.Type.SOFTWARE_ENGINEERING.programName -> listOf(

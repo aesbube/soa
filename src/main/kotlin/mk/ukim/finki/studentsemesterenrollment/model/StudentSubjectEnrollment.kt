@@ -20,4 +20,6 @@ class StudentSubjectEnrollment(
 ) {
     @ManyToOne
     private val replacingSubject: SubjectAggregateSnapshot? = null
+
+    fun getId() = this.studentSubjectEnrollmentId
 }
