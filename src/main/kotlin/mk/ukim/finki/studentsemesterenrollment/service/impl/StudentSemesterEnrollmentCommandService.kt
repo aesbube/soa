@@ -9,6 +9,7 @@ import mk.ukim.finki.studentsemesterenrollment.commands.ValidateEnrollmentCondit
 import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
@@ -18,6 +19,7 @@ import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudyCycle
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.previousSemesterId
 import org.axonframework.commandhandling.gateway.CommandGateway
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
 
@@ -25,6 +27,7 @@ import java.util.concurrent.CompletableFuture
 class StudentSemesterEnrollmentCommandService(
     private val commandGateway: CommandGateway,
     private val studentRecordJpaRepository: StudentRecordJpaRepository,
+    private val studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository
 ) {
 
     private val logger = loggerFor<StudentSemesterEnrollmentCommandService>()
@@ -75,7 +78,21 @@ class StudentSemesterEnrollmentCommandService(
         val studentRecord = studentRecordJpaRepository.findById(StudentId(studentIndex))
             .orElseThrow { IllegalArgumentException("StudentRecord not found for $studentIndex") }
 
-        val failedSubjects = studentRecord.computeFailedSubjects()
+        val previousEnrollmentId = StudentSemesterEnrollmentId(
+            studentIndex = StudentId(studentIndex),
+            semesterCode = CycleSemesterId(
+                semesterId = SemesterId(semesterId).previousSemesterId,
+                cycle = StudyCycle.valueOf(cycleId)
+            )
+        )
+        val prevEnrollment = studentSemesterEnrollmentJpaRepository.findByIdOrNull(previousEnrollmentId)
+            ?: return CompletableFuture.completedFuture(enrollmentId)
+
+        val prevEnrolledSubjects = prevEnrollment.getEnrolledSubjects()
+        val passedSubjects = studentRecord.getPassedSubjects()
+
+        val failedSubjects = prevEnrolledSubjects.map { it.subjectCode() }.filter { it !in passedSubjects }
+//        val failedSubjects = studentRecord.computeFailedSubjects()
 
         if (failedSubjects.isEmpty()) {
             return CompletableFuture.completedFuture(enrollmentId)

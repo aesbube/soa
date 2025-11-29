@@ -29,7 +29,6 @@ import java.time.ZonedDateTime
 import java.util.concurrent.CompletableFuture
 import kotlin.jvm.optionals.getOrNull
 
-
 @Entity
 @Aggregate(repository = "axonStudentSemesterEnrollmentRepository")
 class StudentSemesterEnrollment {
@@ -51,8 +50,9 @@ class StudentSemesterEnrollment {
     private lateinit var lastUpdatedAt: LocalDateTime
 
     @ElementCollection
-    private val enrolledSubjects = mutableListOf<StudentSubjectEnrollmentId>()
+    private lateinit var enrolledSubjects: MutableList<StudentSubjectEnrollmentId>
 
+    fun getEnrolledSubjects() = buildList { addAll(enrolledSubjects) }
 
     @CommandHandler
     constructor(
@@ -88,18 +88,12 @@ class StudentSemesterEnrollment {
         AggregateLifecycle.apply(event)
     }
 
-//    @CommandHandler
-//    fun startEnrollment(command: StartRegularEnrollmentCommand) {
-//        val event = StartStudentSemesterEnrollmentEvent(command)
-//        this.on(event)
-//        AggregateLifecycle.apply(event)
-//    }
-
     fun on(event: StartStudentSemesterEnrollmentEvent) {
         this.id = event.id
         this.student = event.id.studentIndex()
         this.semester = event.id.semesterCode()
         this.enrollmentStatus = EnrollmentStatus.INITIATED
+        this.enrolledSubjects = mutableListOf()
     }
 
     @CommandHandler
@@ -125,7 +119,7 @@ class StudentSemesterEnrollment {
         loggerFor<StudentSemesterEnrollment>().debug("AAAAAAAAAAA")
         loggerFor<StudentSemesterEnrollment>().debug(enrolledSubjects.joinToString { it.toString() })
 
-        enrolledSubjects.map {
+        enrolledSubjects.mapNotNull {
             subjectSlotRepository.findBySubjectIdAndStudentId(it.subjectCode().value, it.semesterEnrollmentId().studentIndex().index)
         }.map {
             SubjectSlot(
@@ -153,25 +147,25 @@ class StudentSemesterEnrollment {
         this.lastUpdatedAt = LocalDateTime.now()
     }
 
-    @CommandHandler
-    fun selectReplacingSubjectForInvalidSubjectEnrollment(
-        command: SelectReplacingSubjectForInvalidSubjectCommand, subjectJpaRepository: SubjectJpaRepository,
-        studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
-    ) {
-        val subject = subjectJpaRepository.findById(command.subjectCode)
-            .orElseThrow { IllegalArgumentException("Subject with code ${command.subjectCode} not found") }
-
-        // TODO: Konsultacii val valid = validateDependencies
-
-        val event = SelectReplacingSubjectForInvalidSubjectEvent(command)
-
-        this.on(event)
-        AggregateLifecycle.apply(event)
-    }
-
-    fun on(event: SelectReplacingSubjectForInvalidSubjectEvent) {
-        this.lastUpdatedAt = LocalDateTime.now()
-    }
+//    @CommandHandler
+//    fun selectReplacingSubjectForInvalidSubjectEnrollment(
+//        command: SelectReplacingSubjectForInvalidSubjectCommand, subjectJpaRepository: SubjectJpaRepository,
+//        studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
+//    ) {
+//        val subject = subjectJpaRepository.findById(command.subjectCode)
+//            .orElseThrow { IllegalArgumentException("Subject with code ${command.subjectCode} not found") }
+//
+//        // TODO: Konsultacii val valid = validateDependencies
+//
+//        val event = SelectReplacingSubjectForInvalidSubjectEvent(command)
+//
+//        this.on(event)
+//        AggregateLifecycle.apply(event)
+//    }
+//
+//    fun on(event: SelectReplacingSubjectForInvalidSubjectEvent) {
+//        this.lastUpdatedAt = LocalDateTime.now()
+//    }
 
     @CommandHandler
     fun enrollStudentInFailedSubject(
@@ -192,33 +186,33 @@ class StudentSemesterEnrollment {
         this.lastUpdatedAt = LocalDateTime.now()
     }
 
-    @CommandHandler
-    fun enrollStudentInSubject(
-        command: EnrollStudentInSubjectCommand, subjectJpaRepository: SubjectJpaRepository,
-        studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
-    ) {
-        val subject = subjectJpaRepository.findById(command.subjectCode)
-            .orElseThrow { IllegalArgumentException("Subject with code ${command.subjectCode} not found") }
-
-        // TODO: Konsultacii val valid = validateDependencies
-
-        val studentSubjectEnrollment = studentSubjectEnrollmentJpaRepository.save(
-            StudentSubjectEnrollment(
-                studentSubjectEnrollmentId = StudentSubjectEnrollmentId(command.id, subjectCode = subject.id),
-                subject = subject,
-                valid = true
-            )
-        )
-        val event = EnrollStudentInSubjectEvent(command)
-
-        this.on(event)
-        AggregateLifecycle.apply(event)
-    }
-
-    fun on(event: EnrollStudentInSubjectEvent) {
-        this.enrolledSubjects.add(StudentSubjectEnrollmentId(event.id, subjectCode = event.subjectCode))
-        this.lastUpdatedAt = LocalDateTime.now()
-    }
+//    @CommandHandler
+//    fun enrollStudentInSubject(
+//        command: EnrollStudentInSubjectCommand, subjectJpaRepository: SubjectJpaRepository,
+//        studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
+//    ) {
+//        val subject = subjectJpaRepository.findById(command.subjectCode)
+//            .orElseThrow { IllegalArgumentException("Subject with code ${command.subjectCode} not found") }
+//
+//        // TODO: Konsultacii val valid = validateDependencies
+//
+//        val studentSubjectEnrollment = studentSubjectEnrollmentJpaRepository.save(
+//            StudentSubjectEnrollment(
+//                studentSubjectEnrollmentId = StudentSubjectEnrollmentId(command.id, subjectCode = subject.id),
+//                subject = subject,
+//                valid = true
+//            )
+//        )
+//        val event = EnrollStudentInSubjectEvent(command)
+//
+//        this.on(event)
+//        AggregateLifecycle.apply(event)
+//    }
+//
+//    fun on(event: EnrollStudentInSubjectEvent) {
+//        this.enrolledSubjects.add(StudentSubjectEnrollmentId(event.id, subjectCode = event.subjectCode))
+//        this.lastUpdatedAt = LocalDateTime.now()
+//    }
 
     @CommandHandler
     fun provisionallyEnrollStudentOnSubject(

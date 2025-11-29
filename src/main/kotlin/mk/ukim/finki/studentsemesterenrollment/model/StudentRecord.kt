@@ -135,7 +135,9 @@ class StudentRecord {
     fun computeFailedSubjects() = subjectSlots
             .map { it.subjectId() }
             .filter { subjectId -> subjectId !in passedSubjects }
-    // todo: add mandatory flag in subject and filter out non-mandatory subjects
+
+    fun getPassedSubjects() = buildList { addAll(passedSubjects) }
+    fun getSubjectSlots() = buildList { addAll(subjectSlots) }
 }
 
 data class StudentPassedSubjectEvent(

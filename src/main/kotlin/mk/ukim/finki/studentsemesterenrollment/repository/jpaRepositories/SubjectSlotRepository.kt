@@ -6,24 +6,26 @@ import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectCode
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SubjectSlotId
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 interface SubjectSlotRepository : JpaRepository<SubjectSlot, SubjectSlotId> {
-    @Query(
-        """
-    SELECT * FROM subject_slot 
-    WHERE student_id = :studentId
+    @Query("""
+    SELECT s FROM SubjectSlot s 
+    WHERE s.studentId.index = :studentId
     AND (
-        subject_id = :subjectId 
+        s.subjectId.value = :subjectId
         OR (
-            subject_id LIKE '%_%' 
-            AND SUBSTRING(subject_id, 1, 5) = SUBSTRING(:subjectId, 1, 5)
+            s.placeholder = true
+            AND SUBSTRING(s.subjectId.value, 1, 5) = SUBSTRING(:subjectId, 1, 5)
         )
     )
     ORDER BY 
-        CASE WHEN subject_id = :subjectId THEN 0 ELSE 1 END,
-        id
-    LIMIT 1
-""", nativeQuery = true
-    )
-    fun findBySubjectIdAndStudentId(subjectId: String, studentId: String): SubjectSlot
+        CASE WHEN s.subjectId.value = :subjectId THEN 0 ELSE 1 END,
+        s.id.id
+        LIMIT 1
+""")
+    fun findBySubjectIdAndStudentId(
+        @Param("subjectId") subjectId: String,
+        @Param("studentId") studentId: String
+    ): SubjectSlot?
 }
