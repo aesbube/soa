@@ -4,6 +4,7 @@ import jakarta.persistence.ElementCollection
 import jakarta.persistence.Embedded
 import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
+import jakarta.persistence.EntityManager
 import jakarta.persistence.OneToMany
 import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SubjectAggregateSnapshot
 import mk.ukim.finki.studentsemesterenrollment.client.AccreditationClient
@@ -61,7 +62,7 @@ class StudentRecord {
     ) {
         val subjects = client.getStudyProgramSubjects(command.studyProgram)
 
-        subjects.mapIndexed { index, code ->
+        subjects.map { code ->
             SubjectSlot(
                 id = SubjectSlotId(code, command.id),
                 subjectId = code,
@@ -95,9 +96,11 @@ class StudentRecord {
         this.createdAt = LocalDateTime.now().withNano(0)
         this.passedSubjects = mutableListOf()
 
-        this.subjectSlots = event.subjects.map { SubjectSlotId(
-            it, event.id
-        ) }.toMutableList()
+        this.subjectSlots = event.subjects.map {
+            SubjectSlotId(
+                it, event.id
+            )
+        }.toMutableList()
     }
 
     @CommandHandler
@@ -105,39 +108,63 @@ class StudentRecord {
         command: SubjectExamCommand,
         subjectRepository: SubjectJpaRepository,
         subjectExamRepository: SubjectExamRepository,
-        subjectSlotRepository: SubjectSlotRepository
-        ) {
+        subjectSlotRepository: SubjectSlotRepository,
+        entityManager: EntityManager,
+        studentRecordJpaRepository: StudentRecordJpaRepository
+    ) {
 
-        val subject = subjectRepository.findByIdOrNull(command.subjectCode) ?: throw RuntimeException("Subject code ${command.subjectCode} not found")
-        val slot = subjectSlotRepository.findById(SubjectSlotId(command.subjectCode, command.studentId))
+        val subject = subjectRepository.findByIdOrNull(command.subjectCode) ?: throw RuntimeException(
+            "Subject code ${command.subjectCode} not found"
+        )
+        val slot = subjectSlotRepository.findBySubjectIdAndStudentId(command.subjectCode.value, command.studentId.index)!!
         val exam = subjectExamRepository.save(
             SubjectExam(
                 professor = command.professorId,
                 grade = command.grade,
                 datePassed = command.datePassed,
                 externalId = command.externalId,
-                subjectSlot = slot.get(),
+                subjectSlot = slot,
                 id = 0L
+            )
+        )
+        subjectSlotRepository.save(
+            SubjectSlot(
+                id = slot.id,
+                exam = exam,
+                subjectId = slot.subjectId,
+                electiveSubjectGroup = slot.electiveSubjectGroup,
+                status = SubjectSlotStatus.PASSED,
+                studentId = slot.studentId,
+                mandatory = slot.mandatory,
+                placeholder = slot.placeholder,
             )
         )
         val event = StudentPassedSubjectEvent(
             subject.id,
             exam
         )
+
+        /*
+        this was added to refresh the entity when storing the passed subjects.
+        TODO: find a way to store the changes in DB, rn state is updated fetching from jpa repo in debugger
+         is fine but when querying the db we can see that there is no update. Probably updates just the current state,
+         and never flushes in db.
+         */
+        studentRecordJpaRepository.save(this)
+
+        this.on(event)
+        entityManager.merge(this)
+        entityManager.flush()
         AggregateLifecycle.apply(event)
     }
 
-    @EventSourcingHandler
     fun on(event: StudentPassedSubjectEvent) {
         this.passedSubjects.add(event.subject)
     }
 
-    fun computeFailedSubjects() = subjectSlots
-            .map { it.subjectId() }
-            .filter { subjectId -> subjectId !in passedSubjects }
-
     fun getPassedSubjects() = buildList { addAll(passedSubjects) }
     fun getSubjectSlots() = buildList { addAll(subjectSlots) }
+    fun getGPA() = gpa.copy()
 }
 
 data class StudentPassedSubjectEvent(

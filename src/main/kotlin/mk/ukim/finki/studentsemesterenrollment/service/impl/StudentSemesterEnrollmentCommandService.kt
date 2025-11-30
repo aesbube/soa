@@ -1,5 +1,6 @@
 package mk.ukim.finki.studentsemesterenrollment.service.impl
 
+import jakarta.persistence.EntityManager
 import mk.ukim.finki.studentsemesterenrollment.commands.ConfirmRegularEnrollmentCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.EnrollStudentInFailedSubjectCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.ProvisionallyEnrollStudentOnSubjectCommand
@@ -10,6 +11,7 @@ import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.model.StudentSemesterEnrollment
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.SemesterId
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentId
@@ -27,7 +29,9 @@ import java.util.concurrent.CompletableFuture
 class StudentSemesterEnrollmentCommandService(
     private val commandGateway: CommandGateway,
     private val studentRecordJpaRepository: StudentRecordJpaRepository,
-    private val studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository
+    private val studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository,
+    private val subjectSlotRepository: SubjectSlotRepository,
+    private val entityManager: EntityManager,
 ) {
 
     private val logger = loggerFor<StudentSemesterEnrollmentCommandService>()
@@ -81,7 +85,7 @@ class StudentSemesterEnrollmentCommandService(
         val previousEnrollmentId = StudentSemesterEnrollmentId(
             studentIndex = StudentId(studentIndex),
             semesterCode = CycleSemesterId(
-                semesterId = SemesterId(semesterId).previousSemesterId,
+                semesterId = SemesterId(semesterId).previousSemesterId.previousSemesterId,
                 cycle = StudyCycle.valueOf(cycleId)
             )
         )
@@ -91,8 +95,11 @@ class StudentSemesterEnrollmentCommandService(
         val prevEnrolledSubjects = prevEnrollment.getEnrolledSubjects()
         val passedSubjects = studentRecord.getPassedSubjects()
 
-        val failedSubjects = prevEnrolledSubjects.map { it.subjectCode() }.filter { it !in passedSubjects }
-//        val failedSubjects = studentRecord.computeFailedSubjects()
+        val failedSubjects =
+            prevEnrolledSubjects.map { it.subjectCode() }.filter { it !in passedSubjects }.let { failedSubjects ->
+                studentRecord.getSubjectSlots().filter { it.subjectId() in failedSubjects }
+                    .let { subjectSlotRepository.findAllById(it) }.filter { it.mandatory }.map { it.subjectId }
+            }
 
         if (failedSubjects.isEmpty()) {
             return CompletableFuture.completedFuture(enrollmentId)

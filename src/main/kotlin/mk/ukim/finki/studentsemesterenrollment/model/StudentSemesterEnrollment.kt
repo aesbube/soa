@@ -28,6 +28,7 @@ import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.concurrent.CompletableFuture
 import kotlin.jvm.optionals.getOrNull
+import kotlin.math.min
 
 @Entity
 @Aggregate(repository = "axonStudentSemesterEnrollmentRepository")
@@ -119,18 +120,18 @@ class StudentSemesterEnrollment {
         loggerFor<StudentSemesterEnrollment>().debug("AAAAAAAAAAA")
         loggerFor<StudentSemesterEnrollment>().debug(enrolledSubjects.joinToString { it.toString() })
 
-        enrolledSubjects.mapNotNull {
-            subjectSlotRepository.findBySubjectIdAndStudentId(it.subjectCode().value, it.semesterEnrollmentId().studentIndex().index)
-        }.map {
+        enrolledSubjects.map {
+            it to subjectSlotRepository.findBySubjectIdAndStudentId(it.subjectCode().value, it.semesterEnrollmentId().studentIndex().index)
+        }.map { (enrolledSubjectId, subjectSlot) ->
             SubjectSlot(
-                id = it.id,
-                studentId = it.studentId,
-                electiveSubjectGroup = it.electiveSubjectGroup,
+                id = subjectSlot!!.id,
+                studentId = subjectSlot.studentId,
+                electiveSubjectGroup = enrolledSubjectId.electiveSubjectGroup(),
                 status = SubjectSlotStatus.ENROLLED,
                 exam = null,
                 placeholder = false,
-                mandatory = it.mandatory,
-                subjectId = it.subjectId,
+                mandatory = subjectSlot.mandatory,
+                subjectId = enrolledSubjectId.subjectCode(),
             )
         }
             .let {
@@ -265,14 +266,12 @@ class StudentSemesterEnrollment {
     @CommandHandler
     fun validateEnrollmentConditions(
         command: ValidateEnrollmentConditionsCommand,
-        studentSemesterEnrollmentJpaRepository: StudentSemesterEnrollmentJpaRepository,
-        commandGateway: CommandGateway
+        commandGateway: CommandGateway,
+        subjectJpaRepository: SubjectJpaRepository,
+        studentRecordJpaRepository: StudentRecordJpaRepository,
+        subjectSlotRepository: SubjectSlotRepository,
     ) {
-        val previousSemesterEnrollment =
-            studentSemesterEnrollmentJpaRepository.findById(command.previousStudentSemesterEnrollmentId).getOrNull()
-
-        // todo: validations...
-        val valid = validate()
+        val valid = validate(subjectJpaRepository, studentRecordJpaRepository, subjectSlotRepository)
 
         when (valid) {
             true -> {
@@ -289,15 +288,33 @@ class StudentSemesterEnrollment {
         }
     }
 
-    private fun validate(): Boolean {
-        return true
+    private fun validate(
+        subjectJpaRepository: SubjectJpaRepository,
+        studentRecordJpaRepository: StudentRecordJpaRepository,
+        subjectSlotRepository: SubjectSlotRepository,
+    ): Boolean {
+        val credits = enrolledSubjects.let { subjectJpaRepository.findAllById(it.map { it.subjectCode() }) }.sumOf { it.ects.credits }
+
+        val studentRecord = studentRecordJpaRepository.findByIdOrNull(id.studentIndex())!!
+
+        val gpa = studentRecord.getGPA()
+
+        val upperBound = if (gpa.gpa >= 8.5) 40 else 36
+
+        val remainingCredits = studentRecord.getSubjectSlots()
+            .let { subjectSlotRepository.findAllById(it) }
+            .filter { it.status == SubjectSlotStatus.NOT_ENROLLED }
+            .map { it.subjectId }
+            .let { subjectJpaRepository.findAllById(it) }
+            .sumOf { it.ects.credits }
+        val lowerBound = min(remainingCredits, 21)
+
+        return credits in (lowerBound..upperBound)
     }
 
     fun on(event: EnrollmentConditionsValidatedEvent, commandGateway: CommandGateway) {
         this.enrollmentStatus = EnrollmentStatus.SUBJECTS_ADDED
         this.lastUpdatedAt = LocalDateTime.now()
-
-        commandGateway.send<Any>(ConfirmEnrolledSubjectsCommand(event.studentSemesterEnrollmentId))
     }
 
     fun on(event: EnrollmentConditionsValidationFailedEvent) {

@@ -14,6 +14,7 @@ data class SubjectSlot(
     val subjectId: SubjectCode,
     @Embedded
     val electiveSubjectGroup: ElectiveSubjectGroup?,
+    @Enumerated(EnumType.STRING)
     val status: SubjectSlotStatus,
     @Embedded
     val studentId: StudentId,

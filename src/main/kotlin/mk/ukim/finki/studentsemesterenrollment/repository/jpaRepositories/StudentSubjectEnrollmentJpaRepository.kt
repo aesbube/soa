@@ -5,4 +5,5 @@ import mk.ukim.finki.studentsemesterenrollment.valueObjects.StudentSubjectEnroll
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface StudentSubjectEnrollmentJpaRepository : JpaRepository<StudentSubjectEnrollment, StudentSubjectEnrollmentId> {
+    fun findAllByStudentSubjectEnrollmentIdIn(studentSubjectEnrollmentIds: List<StudentSubjectEnrollmentId>): List<StudentSubjectEnrollment>
 }

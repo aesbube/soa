@@ -30,11 +30,13 @@ import org.axonframework.commandhandling.gateway.CommandGateway
 import org.axonframework.eventhandling.gateway.EventGateway
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 
 @Component
+@Profile("dev")
 class DataInit(
     private val eventGateway: EventGateway,
     private val subjectSnapshotRepository: SubjectJpaRepository,
@@ -45,45 +47,45 @@ class DataInit(
 ): ApplicationRunner {
 
     override fun run(args: ApplicationArguments?) {
-//        Constants.subjects.map { subjectData ->
-//            SubjectAggregateSnapshot(
-//                id = SubjectCode(subjectData.id),
-//                name = SubjectName(subjectData.name),
-//                abbreviation = SubjectAbbreviation(subjectData.abbreviation),
-//                semesterCode = SemesterId(subjectData.semesterCode),
-//                ects = ECTSCredits(subjectData.ects),
-//                semester = SemesterType.valueOf(subjectData.semester),
-//                classesPerWeek = ClassesPerWeek(
-//                    lectures = subjectData.classesPerWeek.lectures,
-//                    auditoriumClasses = subjectData.classesPerWeek.auditoriumClasses,
-//                    labClasses = subjectData.classesPerWeek.labClasses
-//                )
-//            )
-//        }.let {
-//            subjectSnapshotRepository.saveAllAndFlush(it)
-//        }
-//
-//        val semester = SemesterSnapshot(
-//            id = SemesterId("2021-22-W"),
-//            cycleSemesterId = CycleSemesterId(SemesterId("2021-22-W"), StudyCycle.UNDERGRADUATE),
-//            state = SemesterState.STUDENTS_ENROLLMENT,
-//            enrollmentStartDate = ZonedDateTime.now().toLocalDateTime(),
-//            enrollmentEndDate = ZonedDateTime.now().plusDays(21).toLocalDateTime()
-//        )
-//        semesterSnapshotRepository.saveAndFlush(semester)
-//        val semester2 = SemesterSnapshot(
-//            id = SemesterId("2021-22-S"),
-//            cycleSemesterId = CycleSemesterId(SemesterId("2021-22-S"), StudyCycle.UNDERGRADUATE),
-//            state = SemesterState.STUDENTS_ENROLLMENT,
-//            enrollmentStartDate = ZonedDateTime.now().toLocalDateTime(),
-//            enrollmentEndDate = ZonedDateTime.now().plusDays(21).toLocalDateTime()
-//        )
-//        semesterSnapshotRepository.saveAndFlush(semester2)
-//
-//        val studentRecord = commandGateway.sendAndWait<StudentId>(CreateStudentRecordCommand(
-//            studyProgram = StudyProgram.Type.COMPUTER_SCIENCE.toStudyProgram(),
-//            id = StudentId("216049"),
-//            ects = ECTSCredits(0)
-//        ))
+        Constants.subjects.map { subjectData ->
+            SubjectAggregateSnapshot(
+                id = SubjectCode(subjectData.id),
+                name = SubjectName(subjectData.name),
+                abbreviation = SubjectAbbreviation(subjectData.abbreviation),
+                semesterCode = SemesterId(subjectData.semesterCode),
+                ects = ECTSCredits(subjectData.ects),
+                semester = SemesterType.valueOf(subjectData.semester),
+                classesPerWeek = ClassesPerWeek(
+                    lectures = subjectData.classesPerWeek.lectures,
+                    auditoriumClasses = subjectData.classesPerWeek.auditoriumClasses,
+                    labClasses = subjectData.classesPerWeek.labClasses
+                )
+            )
+        }.let {
+            subjectSnapshotRepository.saveAllAndFlush(it)
+        }
+
+        val semester = SemesterSnapshot(
+            id = SemesterId("2021-22-W"),
+            cycleSemesterId = CycleSemesterId(SemesterId("2021-22-W"), StudyCycle.UNDERGRADUATE),
+            state = SemesterState.STUDENTS_ENROLLMENT,
+            enrollmentStartDate = ZonedDateTime.now().toLocalDateTime(),
+            enrollmentEndDate = ZonedDateTime.now().plusDays(21).toLocalDateTime()
+        )
+        semesterSnapshotRepository.saveAndFlush(semester)
+        val semester2 = SemesterSnapshot(
+            id = SemesterId("2021-22-S"),
+            cycleSemesterId = CycleSemesterId(SemesterId("2021-22-S"), StudyCycle.UNDERGRADUATE),
+            state = SemesterState.STUDENTS_ENROLLMENT,
+            enrollmentStartDate = ZonedDateTime.now().toLocalDateTime(),
+            enrollmentEndDate = ZonedDateTime.now().plusDays(21).toLocalDateTime()
+        )
+        semesterSnapshotRepository.saveAndFlush(semester2)
+
+        val studentRecord = commandGateway.sendAndWait<StudentId>(CreateStudentRecordCommand(
+            studyProgram = StudyProgram.Type.COMPUTER_SCIENCE.toStudyProgram(),
+            id = StudentId("216049"),
+            ects = ECTSCredits(0)
+        ))
     }
 }
