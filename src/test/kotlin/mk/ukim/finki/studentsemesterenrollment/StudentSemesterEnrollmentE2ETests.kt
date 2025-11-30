@@ -5,13 +5,8 @@ import io.restassured.RestAssured
 import io.restassured.config.LogConfig
 import io.restassured.http.ContentType
 import jakarta.persistence.EntityManager
-import mk.ukim.finki.studentsemesterenrollment.StudentSemesterEnrollmentE2ETests.Companion.eighthSemesterSubjects
-import mk.ukim.finki.studentsemesterenrollment.StudentSemesterEnrollmentE2ETests.Companion.fourthSemesterSubjects
-import mk.ukim.finki.studentsemesterenrollment.StudentSemesterEnrollmentE2ETests.Companion.secondSemesterSubjects
-import mk.ukim.finki.studentsemesterenrollment.StudentSemesterEnrollmentE2ETests.Companion.sixthSemesterSubjects
 import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SemesterSnapshot
 import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SubjectAggregateSnapshot
-import mk.ukim.finki.studentsemesterenrollment.client.fallbacks.AccreditationClientFallback
 import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordCommand
 import mk.ukim.finki.studentsemesterenrollment.config.Constants
 import mk.ukim.finki.studentsemesterenrollment.handlers.EventMessagingEventHandler
@@ -20,7 +15,7 @@ import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.Semest
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSubjectEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
-import mk.ukim.finki.studentsemesterenrollment.service.StudentSemesterEnrollmentService
+import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
 import mk.ukim.finki.studentsemesterenrollment.service.impl.StudentRecordCommandService
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.ClassesPerWeek
 import mk.ukim.finki.studentsemesterenrollment.valueObjects.CycleSemesterId
@@ -42,7 +37,6 @@ import org.axonframework.commandhandling.gateway.CommandGateway
 import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,6 +49,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -92,6 +87,9 @@ class StudentSemesterEnrollmentE2ETests {
 
     @Autowired
     private lateinit var studentSubjectEnrollmentJpaRepository: StudentSubjectEnrollmentJpaRepository
+
+    @Autowired
+    private lateinit var subjectSlotRepository: SubjectSlotRepository
 
     @Autowired
     private lateinit var semesterSnapshotRepository: SemesterSnapshotRepository
@@ -258,6 +256,7 @@ class StudentSemesterEnrollmentE2ETests {
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun `flawless student`() {
         val studentId = StudentId("216173")
 
@@ -434,5 +433,7 @@ class StudentSemesterEnrollmentE2ETests {
                 grade = grade
             )
         }
+        subjectSlotRepository.flush()
+        entityManager.clear()
     }
 }

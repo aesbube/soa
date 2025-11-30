@@ -4,14 +4,10 @@ import jakarta.persistence.ElementCollection
 import jakarta.persistence.Embedded
 import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
-import jakarta.persistence.EntityManager
-import jakarta.persistence.OneToMany
-import mk.ukim.finki.studentsemesterenrollment.aggregateSnapshot.SubjectAggregateSnapshot
 import mk.ukim.finki.studentsemesterenrollment.client.AccreditationClient
 import mk.ukim.finki.studentsemesterenrollment.commands.CreateStudentRecordCommand
 import mk.ukim.finki.studentsemesterenrollment.commands.SubjectExamCommand
 import mk.ukim.finki.studentsemesterenrollment.events.StudentRecordCreatedEvent
-import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectExamRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
@@ -108,9 +104,7 @@ class StudentRecord {
         command: SubjectExamCommand,
         subjectRepository: SubjectJpaRepository,
         subjectExamRepository: SubjectExamRepository,
-        subjectSlotRepository: SubjectSlotRepository,
-        entityManager: EntityManager,
-        studentRecordJpaRepository: StudentRecordJpaRepository
+        subjectSlotRepository: SubjectSlotRepository
     ) {
 
         val subject = subjectRepository.findByIdOrNull(command.subjectCode) ?: throw RuntimeException(
@@ -143,21 +137,10 @@ class StudentRecord {
             subject.id,
             exam
         )
-
-        /*
-        this was added to refresh the entity when storing the passed subjects.
-        TODO: find a way to store the changes in DB, rn state is updated fetching from jpa repo in debugger
-         is fine but when querying the db we can see that there is no update. Probably updates just the current state,
-         and never flushes in db.
-         */
-        studentRecordJpaRepository.save(this)
-
-        this.on(event)
-        entityManager.merge(this)
-        entityManager.flush()
         AggregateLifecycle.apply(event)
     }
 
+    @EventSourcingHandler
     fun on(event: StudentPassedSubjectEvent) {
         this.passedSubjects.add(event.subject)
     }

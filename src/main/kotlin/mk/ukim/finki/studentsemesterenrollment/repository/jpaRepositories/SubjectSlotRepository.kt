@@ -16,7 +16,7 @@ interface SubjectSlotRepository : JpaRepository<SubjectSlot, SubjectSlotId> {
         s.subjectId.value = :subjectId
         OR (
             s.placeholder = true
-            AND SUBSTRING(s.subjectId.value, 1, 5) = SUBSTRING(:subjectId, 1, 5)
+            AND SUBSTRING(s.subjectId.value, 1, 6) = SUBSTRING(:subjectId, 1, 6)
         )
     )
     ORDER BY 
