@@ -1,14 +1,11 @@
 package mk.ukim.finki.studentsemesterenrollment.model
 
 import jakarta.persistence.*
-import mk.ukim.finki.studentsemesterenrollment.client.SemesterClient
 import mk.ukim.finki.studentsemesterenrollment.commands.*
-import mk.ukim.finki.studentsemesterenrollment.config.loggerFor
 import mk.ukim.finki.studentsemesterenrollment.events.*
 import mk.ukim.finki.studentsemesterenrollment.model.dto.StudentSemesterEnrollmentDto
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SemesterSnapshotRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentRecordJpaRepository
-import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSemesterEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.StudentSubjectEnrollmentJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectJpaRepository
 import mk.ukim.finki.studentsemesterenrollment.repository.jpaRepositories.SubjectSlotRepository
@@ -18,16 +15,11 @@ import org.axonframework.commandhandling.CommandHandler
 import org.axonframework.commandhandling.gateway.CommandGateway
 import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle
-import org.axonframework.modelling.command.Repository
 import org.axonframework.spring.stereotype.Aggregate
-import org.springframework.cglib.core.Local
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.repository.findByIdOrNull
 import java.time.LocalDateTime
-import java.time.ZonedDateTime
-import java.util.concurrent.CompletableFuture
-import kotlin.jvm.optionals.getOrNull
 import kotlin.math.min
 
 @Entity
@@ -112,32 +104,38 @@ class StudentSemesterEnrollment {
 
     @CommandHandler
     fun confirmRegularEnrollment(
-        command: ConfirmRegularEnrollmentCommand, subjectSlotRepository: SubjectSlotRepository
+        command: ConfirmRegularEnrollmentCommand,
+        subjectSlotRepository: SubjectSlotRepository
     ) {
         val event = ConfirmRegularEnrollmentEvent(command)
 
-        println("AAAAAAAAAAAAA")
-        loggerFor<StudentSemesterEnrollment>().debug("AAAAAAAAAAA")
-        loggerFor<StudentSemesterEnrollment>().debug(enrolledSubjects.joinToString { it.toString() })
+        val slotsToDelete = mutableListOf<SubjectSlot>()
+        val slotsToSave = enrolledSubjects.map { enrolledSubjectId ->
+            val foundSlot = subjectSlotRepository.findBySubjectIdAndStudentId(
+                enrolledSubjectId.subjectCode().value,
+                enrolledSubjectId.semesterEnrollmentId().studentIndex().index
+            ) ?: throw IllegalStateException("SubjectSlot not found for ${enrolledSubjectId.subjectCode()}")
 
-        enrolledSubjects.map {
-            it to subjectSlotRepository.findBySubjectIdAndStudentId(it.subjectCode().value, it.semesterEnrollmentId().studentIndex().index)
-        }.map { (enrolledSubjectId, subjectSlot) ->
+            if (foundSlot.placeholder || foundSlot.subjectId != enrolledSubjectId.subjectCode()) {
+                slotsToDelete.add(foundSlot)
+            }
+
             SubjectSlot(
-                id = subjectSlot!!.id,
-                studentId = subjectSlot.studentId,
+                id = SubjectSlotId(enrolledSubjectId.subjectCode(), foundSlot.studentId),
+                studentId = foundSlot.studentId,
                 electiveSubjectGroup = enrolledSubjectId.electiveSubjectGroup(),
                 status = SubjectSlotStatus.ENROLLED,
                 exam = null,
                 placeholder = false,
-                mandatory = subjectSlot.mandatory,
+                mandatory = foundSlot.mandatory,
                 subjectId = enrolledSubjectId.subjectCode(),
             )
         }
-            .let {
-            loggerFor<StudentSemesterEnrollment>().debug(it.joinToString { it.toString() })
-            subjectSlotRepository.saveAll(it)
-        }
+
+        subjectSlotRepository.deleteAll(slotsToDelete)
+        subjectSlotRepository.flush()
+        subjectSlotRepository.saveAll(slotsToSave)
+        subjectSlotRepository.flush()
 
         this.on(event)
         AggregateLifecycle.apply(event)
