@@ -51,6 +51,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
@@ -102,6 +103,9 @@ class StudentSemesterEnrollmentE2ETests {
 
     @Autowired
     private lateinit var studentRecordCommandService: StudentRecordCommandService
+
+    @Autowired
+    private lateinit var transactionTemplate: TransactionTemplate
 
     @LocalServerPort
     private val port: Int = 0
@@ -273,6 +277,7 @@ class StudentSemesterEnrollmentE2ETests {
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun `enroll student in first semester`() {
         enrollInSemester(
             studentId = StudentId("216049"),
@@ -287,6 +292,12 @@ class StudentSemesterEnrollmentE2ETests {
             )
         )
 
+        passSubjects(mapOf(
+            "F18L1W020" to Grade(10),
+            "F18L1W033" to Grade(10),
+            "F18L1W007" to Grade(10),
+        ), StudentId("216049"))
+
         enrollInSemester(
             studentId = StudentId("216049"),
             semesterId = SemesterId("2021-22-S"),
@@ -300,15 +311,24 @@ class StudentSemesterEnrollmentE2ETests {
             )
         )
 
+        passSubjects(mapOf(
+            "F18L1S032" to Grade(10),
+            "F18L1S016" to Grade(10),
+             "F18L1S003" to Grade(10),
+             "F18L1S034" to Grade(10),
+             "F18L1S146" to Grade(10)//elective
+        ), StudentId("216049"))
+
         enrollInSemesterWithFailedSubjects(
             studentId = StudentId("216049"),
             semesterId = SemesterId("2022-23-W"),
             cycle = StudyCycle.UNDERGRADUATE,
-            subjects = listOf(),
+            subjects = listOf(
+                "F18L2W001",
+                "F18L2W006",
+                "F18L2W109",
+            ),
             expectedFailedSubjects = listOf(
-                "F18L1W020",
-                "F18L1W033",
-                "F18L1W007",
                 "F18L1W031",
                 "F18L1W018",
             )
@@ -354,7 +374,7 @@ class StudentSemesterEnrollmentE2ETests {
         )
     }
 
-    private fun enrollInSemesterWithFailedSubjects(
+    fun enrollInSemesterWithFailedSubjects(
         studentId: StudentId, cycle: StudyCycle, semesterId: SemesterId, subjects: List<String>,
         expectedFailedSubjects: List<String>
     ) {
@@ -377,10 +397,13 @@ class StudentSemesterEnrollmentE2ETests {
 
         assertNotNull(enrollment, "Enrollment [${enrollmentId.id}] not found")
         assertEquals(enrollment.getStatus(), EnrollmentStatus.INITIATED)
-        assertEquals(
-            expectedFailedSubjects.size, enrollment.getEnrolledSubjects().size,
-            "There should be 5 enrolled subjects, from the previous semester"
-        )
+
+        transactionTemplate.execute {
+            assertEquals(
+                expectedFailedSubjects.size, enrollment.getEnrolledSubjects().size,
+                "There should be ${expectedFailedSubjects.size} enrolled subjects, from the previous semester"
+            )
+        }
 
         enrollStudentInSemesterSubjects(
             subjects = subjects,

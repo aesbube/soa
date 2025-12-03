@@ -42,7 +42,7 @@ class StudentSemesterEnrollment {
     @LastModifiedDate
     private lateinit var lastUpdatedAt: LocalDateTime
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private lateinit var enrolledSubjects: MutableList<StudentSubjectEnrollmentId>
 
     fun getEnrolledSubjects() = buildList { addAll(enrolledSubjects) }
