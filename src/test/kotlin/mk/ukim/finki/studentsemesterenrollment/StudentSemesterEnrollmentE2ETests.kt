@@ -169,7 +169,9 @@ class StudentSemesterEnrollmentE2ETests {
     companion object {
         val students = listOf(
             StudentId("216049"),
-            StudentId("216173")
+            StudentId("216173"),
+            StudentId("216174"),
+            StudentId("216175"),
         )
         val firstSemesterSubjects = listOf(
             "F18L1W020",
@@ -292,11 +294,13 @@ class StudentSemesterEnrollmentE2ETests {
             )
         )
 
-        passSubjects(mapOf(
-            "F18L1W020" to Grade(10),
-            "F18L1W033" to Grade(10),
-            "F18L1W007" to Grade(10),
-        ), StudentId("216049"))
+        passSubjects(
+            mapOf(
+                "F18L1W020" to Grade(10),
+                "F18L1W033" to Grade(10),
+                "F18L1W007" to Grade(10),
+            ), StudentId("216049")
+        )
 
         enrollInSemester(
             studentId = StudentId("216049"),
@@ -311,13 +315,15 @@ class StudentSemesterEnrollmentE2ETests {
             )
         )
 
-        passSubjects(mapOf(
-            "F18L1S032" to Grade(10),
-            "F18L1S016" to Grade(10),
-             "F18L1S003" to Grade(10),
-             "F18L1S034" to Grade(10),
-             "F18L1S146" to Grade(10)//elective
-        ), StudentId("216049"))
+        passSubjects(
+            mapOf(
+                "F18L1S032" to Grade(10),
+                "F18L1S016" to Grade(10),
+                "F18L1S003" to Grade(10),
+                "F18L1S034" to Grade(10),
+                "F18L1S146" to Grade(10)//elective
+            ), StudentId("216049")
+        )
 
         enrollInSemesterWithFailedSubjects(
             studentId = StudentId("216049"),
@@ -335,6 +341,107 @@ class StudentSemesterEnrollmentE2ETests {
         )
     }
 
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `enroll student with failed elective subject`() {
+        enrollInSemester(
+            studentId = StudentId("216174"),
+            semesterId = SemesterId("2021-22-W"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L1W020",
+                "F18L1W033",
+                "F18L1W007",
+                "F18L1W031",
+                "F18L1W018",
+            )
+        )
+
+        passSubjects(
+            mapOf(
+                "F18L1W020" to Grade(10),
+                "F18L1W033" to Grade(10),
+                "F18L1W007" to Grade(10),
+            ), StudentId("216174")
+        )
+
+        enrollInSemester(
+            studentId = StudentId("216174"),
+            semesterId = SemesterId("2021-22-S"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L1S032",
+                "F18L1S016",
+                "F18L1S003",
+                "F18L1S034",
+                "F18L1S146"//elective
+            )
+        )
+
+        passSubjects(
+            mapOf(
+                "F18L1S032" to Grade(10),
+                "F18L1S016" to Grade(10),
+                "F18L1S003" to Grade(10),
+                "F18L1S034" to Grade(10),
+            ), StudentId("216174")
+        )
+
+        enrollInSemesterWithFailedSubjects(
+            studentId = StudentId("216174"),
+            semesterId = SemesterId("2022-23-W"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L2W001",
+                "F18L2W006",
+                "F18L2W109",
+            ),
+            expectedFailedSubjects = listOf(
+                "F18L1W031",
+                "F18L1W018",
+            )
+        )
+
+        passSubjects(
+            mapOf(
+                "F18L2W001" to Grade(10),
+                "F18L2W006" to Grade(10),
+                "F18L2W109" to Grade(10),
+                "F18L1W031" to Grade(10),
+                "F18L1W018" to Grade(10),
+            ), StudentId("216174")
+        )
+
+        enrollInSemesterWithFailedSubjects(
+            studentId = StudentId("216174"),
+            semesterId = SemesterId("2022-23-S"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L2S030",
+                "F18L2S017",
+                "F18L2S029",
+                "F18L2S110"
+            ),
+            expectedFailedSubjects = listOf()
+        )
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `enroll student with less than 21 credits`() {
+        enrollInSemester(
+            studentId = StudentId("216175"),
+            semesterId = SemesterId("2021-22-W"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L1W020",
+                "F18L1W033",
+                "F18L1W007"
+            ),
+            valid = false
+        )
+    }
+
     private fun enrollInSubject(enrollmentId: String, subjectId: String) {
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -345,7 +452,7 @@ class StudentSemesterEnrollmentE2ETests {
     }
 
     private fun enrollInSemester(
-        studentId: StudentId, cycle: StudyCycle, semesterId: SemesterId, subjects: List<String>
+        studentId: StudentId, cycle: StudyCycle, semesterId: SemesterId, subjects: List<String>, valid: Boolean = true
     ) {
         val enrollmentRequest = """{
             "studentIndex": "${studentId.index}",
@@ -371,12 +478,13 @@ class StudentSemesterEnrollmentE2ETests {
         enrollStudentInSemesterSubjects(
             subjects = subjects,
             enrollmentId = enrollmentId,
+            valid = valid
         )
     }
 
     fun enrollInSemesterWithFailedSubjects(
         studentId: StudentId, cycle: StudyCycle, semesterId: SemesterId, subjects: List<String>,
-        expectedFailedSubjects: List<String>
+        expectedFailedSubjects: List<String>, valid: Boolean = true
     ) {
         val enrollmentRequest = """{
             "studentIndex": "${studentId.index}",
@@ -408,10 +516,11 @@ class StudentSemesterEnrollmentE2ETests {
         enrollStudentInSemesterSubjects(
             subjects = subjects,
             enrollmentId = enrollmentId,
+            valid = valid
         )
     }
 
-    private fun enrollStudentInSemesterSubjects(subjects: List<String>, enrollmentId: StudentSemesterEnrollmentId) {
+    private fun enrollStudentInSemesterSubjects(subjects: List<String>, enrollmentId: StudentSemesterEnrollmentId, valid: Boolean = true) {
         subjects.forEach { enrollInSubject(enrollmentId.id, it) }
 
         val subjectEnrollments =
@@ -431,21 +540,33 @@ class StudentSemesterEnrollmentE2ETests {
         Thread.sleep(2000)
         entityManager.clear()
         var updatedEnrollment = studentSemesterEnrollmentJpaRepository.findByIdOrNull(enrollmentId)
-        assertEquals(EnrollmentStatus.SUBJECTS_ADDED, updatedEnrollment?.getStatus(), "expected: <SUBJECTS_ADDED> but was: <INVALID>, for enrollment [${enrollmentId.id}]")
+        if (valid) {
+            assertEquals(
+                EnrollmentStatus.SUBJECTS_ADDED,
+                updatedEnrollment?.getStatus(),
+                "expected: <SUBJECTS_ADDED> but was: ${updatedEnrollment?.getStatus()}, for enrollment [${enrollmentId.id}]"
+            )
 
-        // students confirms enrollment
-        RestAssured.given()
-            .contentType(ContentType.JSON)
-            .put("/student-semester-enrollment/${enrollmentId.id}/confirm")
-            .then().log().all()
-            .statusCode(200)
-            .body(notNullValue())
+            // students confirms enrollment
+            RestAssured.given()
+                .contentType(ContentType.JSON)
+                .put("/student-semester-enrollment/${enrollmentId.id}/confirm")
+                .then().log().all()
+                .statusCode(200)
+                .body(notNullValue())
 
-        Thread.sleep(2000)
-        entityManager.clear()
-        updatedEnrollment = studentSemesterEnrollmentJpaRepository.findByIdOrNull(enrollmentId)
+            Thread.sleep(2000)
+            entityManager.clear()
+            updatedEnrollment = studentSemesterEnrollmentJpaRepository.findByIdOrNull(enrollmentId)
 
-        assertEquals(EnrollmentStatus.STUDENT_CONFIRMED, updatedEnrollment?.getStatus())
+            assertEquals(EnrollmentStatus.STUDENT_CONFIRMED, updatedEnrollment?.getStatus())
+        } else {
+            assertEquals(
+                EnrollmentStatus.INVALID,
+                updatedEnrollment?.getStatus(),
+                "expected: <INVALID> but was: ${updatedEnrollment?.getStatus()}, for enrollment [${enrollmentId.id}]"
+            )
+        }
     }
 
     private fun passSubjects(subjects: Map<String, Grade>, studentId: StudentId) {
