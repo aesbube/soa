@@ -172,6 +172,7 @@ class StudentSemesterEnrollmentE2ETests {
             StudentId("216173"),
             StudentId("216174"),
             StudentId("216175"),
+            StudentId("216176"),
         )
         val firstSemesterSubjects = listOf(
             "F18L1W020",
@@ -437,6 +438,26 @@ class StudentSemesterEnrollmentE2ETests {
                 "F18L1W020",
                 "F18L1W033",
                 "F18L1W007"
+            ),
+            valid = false
+        )
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `enroll student with more than 36 credits`() {
+        enrollInSemester(
+            studentId = StudentId("216176"),
+            semesterId = SemesterId("2021-22-W"),
+            cycle = StudyCycle.UNDERGRADUATE,
+            subjects = listOf(
+                "F18L1W020",
+                "F18L1W033",
+                "F18L1W007",
+                "F18L1W031",
+                "F18L1W018",
+                "F18L2W014",
+                "F18L2W140"
             ),
             valid = false
         )

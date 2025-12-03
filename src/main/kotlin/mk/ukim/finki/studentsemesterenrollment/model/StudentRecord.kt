@@ -42,6 +42,9 @@ class StudentRecord {
     @ElementCollection
     private var passedSubjects: MutableList<SubjectCode> = mutableListOf()
 
+    @ElementCollection
+    private var grades: MutableList<Grade> = mutableListOf()
+
     private lateinit var enrollmentYear: StudyYear
     private var winterSemesterNumber: Int = 0
     private var summerSemesterNumber: Int = 0
@@ -91,6 +94,7 @@ class StudentRecord {
         this.summerSemesterNumber = 0
         this.createdAt = LocalDateTime.now().withNano(0)
         this.passedSubjects = mutableListOf()
+        this.grades = mutableListOf()
 
         this.subjectSlots = event.subjects.map {
             SubjectSlotId(
@@ -143,6 +147,20 @@ class StudentRecord {
     @EventSourcingHandler
     fun on(event: StudentPassedSubjectEvent) {
         this.passedSubjects.add(event.subject)
+        this.grades.add(event.exam.grade)
+
+        this.gpa = this.calculateGPA()
+    }
+
+    private fun calculateGPA(): GPA {
+        if (passedSubjects.isEmpty()) {
+            return GPA(5.0)
+        }
+
+        val totalGrades = grades.sumOf { it.grade }.toDouble()
+        val averageGrade = totalGrades / grades.size
+
+        return GPA(averageGrade)
     }
 
     fun getPassedSubjects() = buildList { addAll(passedSubjects) }
